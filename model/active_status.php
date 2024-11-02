@@ -1,11 +1,12 @@
 <?php
 session_start();
 
+
 // Include the database connection
 require '../db/db.php';
 
 // Check if the user is logged in (modify as necessary)
-if (!isset($_SESSION['Id'])) {
+if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
 }
@@ -16,14 +17,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
     $new_status = $_POST['new_status'] === '1' ? 0 : 1; // Toggle status
 
     // Update the active status in the database
-    $stmt = $conn->prepare("UPDATE stock SET active = ? WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE products SET active = ? WHERE id = ?");
     $stmt->bind_param("ii", $new_status, $id);
     $stmt->execute();
     $stmt->close();
 }
 
 // Fetch all products from the database
-$sql = "SELECT * FROM stock";
+$sql = "SELECT * FROM products";
 $result = $conn->query($sql);
 ?>
 
@@ -121,27 +122,31 @@ $result = $conn->query($sql);
                 <th>Active Status</th>
                 <th>Action</th>
             </tr>
+            
         </thead>
         <tbody>
             <?php if ($result->num_rows > 0): ?>
                 <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
                         <td><?php echo $row['id']; ?></td>
-                        <td><?php echo $row['category']; ?></td>
+                        <td><?php echo $row['catagorey']; ?></td>
                         <td><?php echo $row['product_name']; ?></td>
                         <td><?php echo $row['product_details']; ?></td>
                         <td>BDT <?php echo number_format($row['price'], 2); ?></td>
                         <td><img src="../uploads/<?php echo $row['product_image']; ?>" alt="<?php echo $row['product_name']; ?>"></td>
-                        <td><?php echo $row['active'] ? 'Active' : 'Inactive'; ?></td>
-                        <td>
-                            <form method="POST" style="display:inline;">
-                                <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
-                                <input type="hidden" name="new_status" value="<?php echo $row['active']; ?>">
-                                <button type="submit" name="update_status">
-                                    <?php echo $row['active'] ? 'Deactivate' : 'Activate'; ?>
-                                </button>
-                            </form>
-                        </td>
+                        <td style="background-color: <?php echo $row['Active'] ? '#28a745' : '#dc3545'; ?>; color: white; font-weight: bold; padding: 10px; border-radius: 5px;">
+    <?php echo $row['Active'] ? 'Active' : 'Inactive'; ?>
+</td>
+<td>
+    <form method="POST" style="display:inline;">
+        <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
+        <input type="hidden" name="new_status" value="<?php echo $row['Active']; ?>">
+        <button type="submit" name="update_status" style="background-color: <?php echo $row['Active'] ? '#dc3545' : '#28a745'; ?>; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px;">
+            <?php echo $row['Active'] ? 'Deactivate' : 'Activate'; ?>
+        </button>
+    </form>
+</td>
+
                     </tr>
                 <?php endwhile; ?>
             <?php else: ?>

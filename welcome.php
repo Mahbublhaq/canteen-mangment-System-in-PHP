@@ -1,4 +1,4 @@
 <?php
 //signup page
-include 'view/add_product.html';
+include 'view/login.html';
 ?>
