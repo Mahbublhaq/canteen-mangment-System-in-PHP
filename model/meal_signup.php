@@ -134,7 +134,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 
         <label for="deposit">Initial Deposit:</label>
-        <input type="number" step="0.01" name="deposit" value="2000.00" required>
+        <input type="number" step="0.01" name="deposit" placeholder="Minimum ADD 2000 TK" required>
+
 
         <label for="varsity_id">Varsity ID:</label>
         <input type="text" name="varsity_id" required>
