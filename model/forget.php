@@ -8,8 +8,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $role = $_POST['role'] ?? '';
 
     // Determine the table based on selected role
-    if ($role == 'customer') {
-        $table = 'customer';
+    if ($role == 'customers') {
+        $table = 'customers';
     } elseif ($role == 'admin') {
         $table = 'admin';
     } else {
@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // Check if email and phone exist in the selected table
-    $sql = "SELECT Email, Phone FROM $table WHERE Email = ? AND Phone = ?";
+    $sql = "SELECT email, phone FROM $table WHERE email = ? AND phone = ?";
     $stmt = $conn->prepare($sql);
 
     if ($stmt === false) {
@@ -30,7 +30,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($result->num_rows > 0) {
         // Update password in the respective table
-        $sql_update = "UPDATE $table SET Password = ? WHERE Email = ? AND Phone = ?";
+        $sql_update = "UPDATE $table SET Password = ? WHERE email = ? AND phone = ?";
         $stmt_update = $conn->prepare($sql_update);
 
         if ($stmt_update === false) {

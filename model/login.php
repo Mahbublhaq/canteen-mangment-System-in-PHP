@@ -1,67 +1,69 @@
 <?php
-require '../db/db.php'; // Database connection
 
-session_start(); // Start the session
+session_start();
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $role = $_POST['role'] ?? '';
 
-    // Check if role is provided
-    if (empty($role)) {
-        echo "Please select a role!";
+include '../db/db.php'; // Make sure to include your database connection file
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+    $role = trim($_POST['role']);
+
+    // Debug: Output the received role
+    echo "Received Role: " . $role . "<br>";
+
+    // Basic validation
+    if (empty($email) || empty($password) || empty($role)) {
+        echo "All fields are required.";
         exit;
     }
 
-    // Determine the SQL query based on the role selection
-    if ($role === "user") {
-        $sql = "SELECT Id, Name, Password FROM customer WHERE Email = ?";
-    } else if ($role === "admin") {
-        $sql = "SELECT Id, Name, Password FROM admin WHERE Email = ?";
+    // Prepare the SQL statement based on the role
+    if ($role === 'customer') {
+        $stmt = $conn->prepare("SELECT * FROM customers WHERE email = ?");
+    } elseif ($role === 'admin') {
+        $stmt = $conn->prepare("SELECT * FROM admins WHERE email = ?");
     } else {
-        echo "Invalid role!";
+        echo "Invalid role specified.";
         exit;
     }
 
-    // Prepare the statement
-    if ($stmt = $conn->prepare($sql)) {
-        // Bind parameters
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+    // Bind the parameters and execute
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-        // Check if the user exists
-        if ($result->num_rows > 0) {
-            $row = $result->fetch_assoc();
-            $db_password = $row['Password'];
+    // Check if user exists
+    if ($result->num_rows == 1) {
+        $user = $result->fetch_assoc();
 
-            // Verify the password
-            if (password_verify($password, $db_password)) {
-                // Login successful, set session variables
-                $_SESSION['Id'] = $row['Id']; // Store the user ID in the session
-                $_SESSION['Name'] = $row['Name']; // Store the user name in the session
+        // Debug: Output stored hash
+        echo "Stored Hash: " . $user['password'] . "<br>";
 
-                // Redirect to the respective dashboard
-                if ($role == 'admin') {
-                    header("Location: ../admin_dashboard.php");
-                } else {
-                    header("Location: ../view/meal_registration.html");
-                }
-                exit(); // Ensure no further code is executed after the redirect
+        // Verify password
+        if (password_verify($password, $user['password'])) {
+            // Password is correct
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['role'] = $user['role'];
+
+            // Redirect to the user dashboard or admin panel based on role
+            if ($role == 'admin') {
+                header("Location: /admin/dashboard.php");
             } else {
-                echo "Incorrect password!";
+                header("Location: /model/meal_signup.php");
             }
+            exit();
         } else {
-            echo "User not found!";
+            echo "Invalid password.";
         }
-
-        $stmt->close();
     } else {
-        // If query preparation fails, display error
-        echo "Error preparing query: " . $conn->error;
+        echo "No user found with this email.";
     }
 
+    // Close the statement and connection
+    $stmt->close();
     $conn->close();
 }
 ?>

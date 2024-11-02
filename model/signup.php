@@ -14,14 +14,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $phone = $_POST['phone'] ?? '';
 
     // Hash the password for security
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+  // $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
     // Prepare SQL query to insert into database
-    $sql = "INSERT INTO customer (Name, Email, Password, Address, Phone) VALUES (?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO customers ( customer_name, email, password, address, phone) VALUES (?, ?, ?, ?, ?)";
     
     // Prepare the statement to avoid SQL injection
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("sssss", $name, $email, $hashed_password, $address, $phone);
+        $stmt->bind_param("sssss", $name, $email, $password, $address, $phone);
 
         // Execute and check if insertion was successful
         if ($stmt->execute()) {
