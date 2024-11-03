@@ -41,16 +41,6 @@ CREATE TABLE meal (
     FOREIGN KEY (meal_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 
--- Create cart table (optional for persistent storage)
-CREATE TABLE cart (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT NOT NULL,
-    product_id INT NOT NULL,
-    quantity INT DEFAULT 1,
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
-    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
 
 -- Create meal_registration table with additional fields
 CREATE TABLE meal_registration (
