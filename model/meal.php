@@ -9,7 +9,7 @@ $result = $conn->query($sql);
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     $product_id = $_POST['product_id'];
     $product_name = $_POST['product_name'];
-    $product_image = $_POST['product_image']; // Ensure this is passed
+    $product_image = $_POST['product_image'];
     $product_details = $_POST['product_details'];
     $price = $_POST['price'];
 
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
         // Add new product to cart
         $_SESSION['cart'][$product_id] = [
             'product_name' => $product_name,
-            'product_image' => $product_image, // Make sure to add this
+            'product_image' => $product_image,
             'product_details' => $product_details,
             'price' => $price,
             'quantity' => 1
@@ -35,6 +35,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     // Redirect back to avoid form resubmission
     header("Location: meal.php");
     exit();
+}
+
+// Handle order submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
+    $product_id = $_POST['product_id']; // Get the product_id from POST
+    // Check if product exists in the cart
+    if (isset($_SESSION['cart'][$product_id])) {
+        $meal_id = $product_id; // Use the product_id as the meal_id
+        $lunch_meal = $_SESSION['cart'][$product_id]['product_name'];
+        $dinner_meal = $lunch_meal; // Modify this logic if necessary
+        $deposit = 100; // Replace with your logic to get deposit amount
+        $meal_price = $_SESSION['cart'][$product_id]['price'];
+        $remain_balance = $deposit - $meal_price;
+
+        // Insert the order into the meal table
+        $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, dinner_meal, deposit, meal_price, remain_balance, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->bind_param("issdds", $meal_id, $lunch_meal, $dinner_meal, $deposit, $meal_price, $remain_balance);
+
+        if ($stmt->execute()) {
+            // Successfully inserted
+            unset($_SESSION['cart']); // Clear the cart
+            header("Location: success.php"); // Redirect to a success page
+            exit();
+        } else {
+            // Handle error
+            echo "Error: " . $stmt->error;
+        }
+    } else {
+        echo "Error: Product not found in the cart.";
+    }
 }
 ?>
 
@@ -61,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
         .button-group { display: flex; gap: 10px; justify-content: center; }
         .button { padding: 10px 20px; border-radius: 5px; color: white; border: none; cursor: pointer; transition: background-color 0.3s; }
         .add-to-cart { background-color: #007bff; }
-        .order-now { background-color: #28a745; }
         .button:hover { opacity: 0.9; }
     </style>
 </head>
@@ -82,11 +111,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                                     <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
                                     <input type="hidden" name="product_name" value="<?php echo $row['product_name']; ?>">
                                     <input type="hidden" name="product_details" value="<?php echo $row['product_details']; ?>">
-                                    <input type="hidden" name="product_image" value="<?php echo $row['product_image']; ?>"> <!-- Ensure this is set -->
+                                    <input type="hidden" name="product_image" value="<?php echo $row['product_image']; ?>">
                                     <input type="hidden" name="price" value="<?php echo $row['price']; ?>">
                                     <button type="submit" name="add_to_cart" class="button add-to-cart">Add to Cart</button>
+                                   
                                 </form>
-                                <a href="cart.php" class="button order-now">View Cart</a>
                             </div>
                         </div>
                     </div>

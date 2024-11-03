@@ -6,6 +6,7 @@ require '../db/db.php';
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Update cart functionality
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_cart'])) {
     $product_id = $_POST['product_id'];
     $new_quantity = (int)$_POST['quantity'];
@@ -16,11 +17,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_cart'])) {
     }
 }
 
+// Remove item from cart
 if (isset($_GET['action']) && $_GET['action'] == 'remove') {
     $product_id = $_GET['id'];
     unset($_SESSION['cart'][$product_id]);
 }
 
+// Calculate total price
 function calculateTotalPrice() {
     $total = 0;
     foreach ($_SESSION['cart'] as $item) {
@@ -29,6 +32,52 @@ function calculateTotalPrice() {
     return $total;
 }
 $totalPrice = calculateTotalPrice();
+
+// Handle order placement
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
+    $deposit = 1000; // Replace this with the actual deposit value from session or database
+    $meal_price = calculateTotalPrice();
+    $remain_balance = $deposit - $meal_price;
+
+    // Ensure we have a valid deposit and remaining balance
+    if ($remain_balance < 0) {
+        echo "Insufficient balance. Please add more funds.";
+        exit();
+    }
+
+    // Insert into meal table for each item in the cart
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $product_id => $item) {
+            $lunch_meal = $item['product_name'];
+            $dinner_meal = $lunch_meal; // Modify if needed
+
+            // Check if the meal_id exists in the customers table
+            $checkStmt = $conn->prepare("SELECT id FROM customers WHERE id = ?");
+            $checkStmt->bind_param("i", $product_id);
+            $checkStmt->execute();
+            $checkStmt->store_result();
+
+            if ($checkStmt->num_rows > 0) {
+                // Insert into meal table if meal_id exists in customers
+                $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, dinner_meal, deposit, meal_price, remain_balance, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+                $stmt->bind_param("issdds", $product_id, $lunch_meal, $dinner_meal, $deposit, $meal_price, $remain_balance);
+
+                if (!$stmt->execute()) {
+                    echo "Error inserting into meal table: " . $stmt->error;
+                    exit();
+                }
+            } else {
+                echo "Meal ID $product_id does not exist in the customers table.";
+            }
+            $checkStmt->close();
+        }
+    }
+
+    // Clear cart after order
+    unset($_SESSION['cart']);
+    header("Location: success.php"); // Redirect to a success page
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -66,11 +115,8 @@ $totalPrice = calculateTotalPrice();
                     <tr>
                         <td>
                             <?php 
-                            // Set image path and default image
                             $imagePath = "../uploads/" . ($item['product_image'] ?? null); // Use null coalescing
                             $defaultImage = "../uploads/default-image.jpg"; // Path to your default image
-
-                            // Use a default image if product_image is not set
                             $imageSrc = !empty($item['product_image']) && file_exists($imagePath) ? $imagePath : $defaultImage;
                             ?>
                             <img src="<?php echo $imageSrc; ?>" style="width: 100px;">
@@ -94,6 +140,11 @@ $totalPrice = calculateTotalPrice();
             </tbody>
         </table>
         <h4 class="text-right">Total Price: BDT <?php echo number_format($totalPrice, 2); ?></h4>
+
+        <!-- Order Button -->
+        <form method="POST" action="cart.php" class="text-right">
+            <button type="submit" name="place_order" class="btn btn-primary">Place Order</button>
+        </form>
     <?php endif; ?>
 </div>
 
