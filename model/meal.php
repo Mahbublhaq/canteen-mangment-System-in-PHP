@@ -5,34 +5,34 @@ require '../db/db.php'; // Include database connection
 // Fetch all products where category is "Meal" and active status is 1
 $sql = "SELECT * FROM products WHERE catagorey = 'Meal' AND active = 1";
 $result = $conn->query($sql);
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
-    $product_id = $_GET['id'];
-    $product_name = $_POST['product_name'] ?? '';
-    $product_details = $_POST['product_details'] ?? '';
-    $price = $_POST['price'] ?? 0;
+    $product_id = $_POST['product_id'];
+    $product_name = $_POST['product_name'];
+    $product_image = $_POST['product_image']; // Ensure this is passed
+    $product_details = $_POST['product_details'];
+    $price = $_POST['price'];
 
     // Initialize cart if not set
     if (!isset($_SESSION['cart'])) {
         $_SESSION['cart'] = [];
     }
 
-    // Check if product_name and product_details are available
-    if ($product_name && $product_details) {
-        // Check if the product is already in the cart
-        if (isset($_SESSION['cart'][$product_id])) {
-            $_SESSION['cart'][$product_id]['quantity'] += 1;
-        } else {
-            // Add new product to cart
-            $_SESSION['cart'][$product_id] = [
-                'product_name' => $product_name,
-                'product_details' => $product_details,
-                'price' => $price,
-                'quantity' => 1
-            ];
-        }
+    // Check if product is already in the cart
+    if (isset($_SESSION['cart'][$product_id])) {
+        $_SESSION['cart'][$product_id]['quantity'] += 1;
+    } else {
+        // Add new product to cart
+        $_SESSION['cart'][$product_id] = [
+            'product_name' => $product_name,
+            'product_image' => $product_image, // Make sure to add this
+            'product_details' => $product_details,
+            'price' => $price,
+            'quantity' => 1
+        ];
     }
     
-    // Redirect back to meal.php to avoid resubmitting the form
+    // Redirect back to avoid form resubmission
     header("Location: meal.php");
     exit();
 }
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meal Menu</title>
-    <link rel="stylesheet" href="style.css"> <!-- Link to a custom CSS file if you have -->
+    <link rel="stylesheet" href="style.css">
     <style>
         /* E-commerce Style */
         body { font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; }
@@ -78,21 +78,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
                             <div class="product-description"><?php echo $row['product_details']; ?></div>
                             <div class="product-price">BDT <?php echo number_format($row['price'], 2); ?></div>
                             <div class="button-group">
-                                <form method="POST" action="cart.php" style="display:inline;">
+                                <form method="POST" action="meal.php" style="display:inline;">
                                     <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
-                                    <button type="submit" class="button add-to-cart">Add to Cart</button>
+                                    <input type="hidden" name="product_name" value="<?php echo $row['product_name']; ?>">
+                                    <input type="hidden" name="product_details" value="<?php echo $row['product_details']; ?>">
+                                    <input type="hidden" name="product_image" value="<?php echo $row['product_image']; ?>"> <!-- Ensure this is set -->
+                                    <input type="hidden" name="price" value="<?php echo $row['price']; ?>">
+                                    <button type="submit" name="add_to_cart" class="button add-to-cart">Add to Cart</button>
                                 </form>
-                                <form method="POST" action="order.php" style="display:inline;">
-                                    <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
-                                    <button type="submit" class="button order-now">Order Now</button>
-                                </form>
-                                
+                                <a href="cart.php" class="button order-now">View Cart</a>
                             </div>
                         </div>
                     </div>
                 <?php endwhile; ?>
             <?php else: ?>
-                <p>No meals available.</p>
+                <div class="alert alert-warning">No products found.</div>
             <?php endif; ?>
         </div>
     </div>
@@ -100,6 +100,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
 </html>
 
 <?php
-// Close the database connection
 $conn->close();
 ?>
