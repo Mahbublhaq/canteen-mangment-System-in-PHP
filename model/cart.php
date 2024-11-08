@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 require '../db/db.php';
 
 error_reporting(E_ALL);
@@ -23,55 +22,102 @@ if (isset($_GET['action']) && $_GET['action'] == 'remove') {
     unset($_SESSION['cart'][$product_id]);
 }
 
-// Calculate total price
-function calculateTotalPrice() {
-    $total = 0;
+// Calculate total price for Lunch and Dinner items separately
+function calculateMealTotals() {
+    $totals = [
+        'lunch' => 0,
+        'dinner' => 0
+    ];
+
     foreach ($_SESSION['cart'] as $item) {
-        $total += $item['price'] * $item['quantity'];
+        $itemTotal = $item['price'] * $item['quantity'];
+        if ($item['product_name'] === "Lunch Meal") {
+            $totals['lunch'] += $itemTotal;
+        } elseif ($item['product_name'] === "Dinner Meal") {
+            $totals['dinner'] += $itemTotal;
+        }
     }
-    return $total;
+    return $totals;
 }
-$totalPrice = calculateTotalPrice();
+
+$mealTotals = calculateMealTotals();
+$lunchTotalPrice = $mealTotals['lunch'];
+$dinnerTotalPrice = $mealTotals['dinner'];
 
 // Handle order placement
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
-    $deposit = 1000; // Replace this with the actual deposit value from session or database
-    $meal_price = calculateTotalPrice();
-    $remain_balance = $deposit - $meal_price;
+    $customer_id = $_SESSION['user_id']; // Assuming user_id is stored in session
 
-    // Ensure we have a valid deposit and remaining balance
+    // Fetch the current remaining balance from meal_registration, set initial deposit to 100 if null
+    $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE id = ?");
+    $checkStmt->bind_param("i", $customer_id);
+    $checkStmt->execute();
+    $checkStmt->bind_result($previous_balance);
+    if (!$checkStmt->fetch()) {
+        // If no existing deposit is found, set it to 100
+        $previous_balance = 100;
+        $insertStmt = $conn->prepare("INSERT INTO meal_registration (id, deposit) VALUES (?, ?)");
+        $insertStmt->bind_param("id", $customer_id, $previous_balance);
+        $insertStmt->execute();
+        $insertStmt->close();
+    }
+    $checkStmt->close();
+
+    // Calculate new remaining balance after order
+    $totalOrderPrice = $lunchTotalPrice + $dinnerTotalPrice;
+    $remain_balance = $previous_balance - $totalOrderPrice;
+
+    // Check if balance is sufficient
     if ($remain_balance < 0) {
-        echo "Insufficient balance. Please add more funds.";
+        echo "<div class='alert alert-danger'>Insufficient balance. Please add more funds.</div>";
         exit();
     }
 
-    // Insert into meal table for each item in the cart
-    if (!empty($_SESSION['cart'])) {
-        foreach ($_SESSION['cart'] as $product_id => $item) {
-            $lunch_meal = $item['product_name'];
-            $dinner_meal = $lunch_meal; // Modify if needed
+    // Count total quantities for Lunch Meal and Dinner Meal
+    $lunch_total_quantity = 0;
+    $dinner_total_quantity = 0;
 
-            // Check if the meal_id exists in the customers table
-            $checkStmt = $conn->prepare("SELECT id FROM customers WHERE id = ?");
-            $checkStmt->bind_param("i", $product_id);
-            $checkStmt->execute();
-            $checkStmt->store_result();
-
-            if ($checkStmt->num_rows > 0) {
-                // Insert into meal table if meal_id exists in customers
-                $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, dinner_meal, deposit, meal_price, remain_balance, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-                $stmt->bind_param("issdds", $product_id, $lunch_meal, $dinner_meal, $deposit, $meal_price, $remain_balance);
-
-                if (!$stmt->execute()) {
-                    echo "Error inserting into meal table: " . $stmt->error;
-                    exit();
-                }
-            } else {
-                echo "Meal ID $product_id does not exist in the customers table.";
-            }
-            $checkStmt->close();
+    foreach ($_SESSION['cart'] as $product_id => $item) {
+        if ($item['product_name'] === "Lunch Meal") {
+            $lunch_total_quantity += $item['quantity'];
+        } elseif ($item['product_name'] === "Dinner Meal") {
+            $dinner_total_quantity += $item['quantity'];
         }
     }
+
+    // Insert a row for Lunch Meal if any are in the cart
+    if ($lunch_total_quantity > 0) {
+        $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, lunch_quantity, meal_price, remain_balance, created_at) VALUES (?, 1, ?, ?, ?, NOW())");
+        $stmt->bind_param("iidd", $customer_id, $lunch_total_quantity, $lunchTotalPrice, $remain_balance);
+
+        if (!$stmt->execute()) {
+            echo "<div class='alert alert-danger'>Error inserting Lunch Meal into meal table: " . $stmt->error . "</div>";
+            exit();
+        }
+        $stmt->close();
+    }
+
+    // Insert a row for Dinner Meal if any are in the cart
+    if ($dinner_total_quantity > 0) {
+        $stmt = $conn->prepare("INSERT INTO meal (meal_id, dinner_meal, dinner_quantity, meal_price, remain_balance, created_at) VALUES (?, 1, ?, ?, ?, NOW())");
+        $stmt->bind_param("iidd", $customer_id, $dinner_total_quantity, $dinnerTotalPrice, $remain_balance);
+
+        if (!$stmt->execute()) {
+            echo "<div class='alert alert-danger'>Error inserting Dinner Meal into meal table: " . $stmt->error . "</div>";
+            exit();
+        }
+        $stmt->close();
+    }
+
+    // Update the deposit in meal_registration table based on the new remain_balance
+    $updateStmt = $conn->prepare("UPDATE meal_registration SET deposit = ? WHERE id = ?");
+    $updateStmt->bind_param("di", $remain_balance, $customer_id);
+
+    if (!$updateStmt->execute()) {
+        echo "<div class='alert alert-danger'>Error updating deposit: " . $updateStmt->error . "</div>";
+        exit();
+    }
+    $updateStmt->close();
 
     // Clear cart after order
     unset($_SESSION['cart']);
@@ -80,26 +126,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
 }
 ?>
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Your Cart</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .cart-container {
+            margin-top: 50px;
+        }
+        .table-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+        }
+        .empty-cart {
+            padding: 30px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <h2 class="text-center">Your Cart</h2>
+<div class="container cart-container">
+    <h2 class="text-center mb-4">Your Cart</h2>
     
     <?php if (empty($_SESSION['cart'])): ?>
         <div class="alert alert-warning text-center" role="alert">
             Your cart is empty. <a href="meal.php" class="alert-link">Continue Shopping</a>
         </div>
     <?php else: ?>
-        <table class="table table-bordered">
-            <thead>
+        <table class="table table-hover table-bordered align-middle">
+            <thead class="table-dark">
                 <tr>
                     <th>Image</th>
                     <th>Product Name</th>
@@ -115,20 +177,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                     <tr>
                         <td>
                             <?php 
-                            $imagePath = "../uploads/" . ($item['product_image'] ?? null); // Use null coalescing
-                            $defaultImage = "../uploads/default-image.jpg"; // Path to your default image
-                            $imageSrc = !empty($item['product_image']) && file_exists($imagePath) ? $imagePath : $defaultImage;
+                            $imagePath = "../uploads/" . ($item['product_image'] ?? 'default-image.jpg');
                             ?>
-                            <img src="<?php echo $imageSrc; ?>" style="width: 100px;">
+                            <img src="<?php echo file_exists($imagePath) ? $imagePath : '../uploads/default-image.jpg'; ?>" class="table-image rounded">
                         </td>
                         <td><?php echo htmlspecialchars($item['product_name']); ?></td>
                         <td><?php echo htmlspecialchars($item['product_details']); ?></td>
                         <td><?php echo number_format($item['price'], 2); ?></td>
                         <td>
-                            <form method="POST" action="cart.php" class="form-inline">
+                            <form method="POST" action="cart.php" class="form-inline d-flex">
                                 <input type="hidden" name="product_id" value="<?php echo $product_id; ?>">
-                                <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" class="form-control" style="width: 60px;">
-                                <button type="submit" name="update_cart" class="btn btn-success btn-sm ml-2">Update</button>
+                                <input type="number" name="quantity" value="<?php echo $item['quantity']; ?>" min="1" class="form-control w-50 me-2">
+                                <button type="submit" name="update_cart" class="btn btn-success btn-sm">Update</button>
                             </form>
                         </td>
                         <td><?php echo number_format($item['price'] * $item['quantity'], 2); ?></td>
@@ -139,14 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                 <?php endforeach; ?>
             </tbody>
         </table>
-        <h4 class="text-right">Total Price: BDT <?php echo number_format($totalPrice, 2); ?></h4>
-
-        <!-- Order Button -->
-        <form method="POST" action="cart.php" class="text-right">
-            <button type="submit" name="place_order" class="btn btn-primary">Place Order</button>
-        </form>
+        <div class="d-flex justify-content-between align-items-center">
+            <h4>Total Price: BDT <?php echo number_format($lunchTotalPrice + $dinnerTotalPrice, 2); ?></h4>
+            <form method="POST" action="cart.php">
+                <button type="submit" name="place_order" class="btn btn-primary">Place Order</button>
+            </form>
+        </div>
     <?php endif; ?>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
