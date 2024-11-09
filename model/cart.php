@@ -48,18 +48,14 @@ $dinnerTotalPrice = $mealTotals['dinner'];
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $customer_id = $_SESSION['user_id']; // Assuming user_id is stored in session
 
-    // Fetch the current remaining balance from meal_registration, set initial deposit to 100 if null
+    // Fetch the current remaining balance (deposit) from meal_registration
     $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE id = ?");
     $checkStmt->bind_param("i", $customer_id);
     $checkStmt->execute();
     $checkStmt->bind_result($previous_balance);
     if (!$checkStmt->fetch()) {
-        // If no existing deposit is found, set it to 100
-        $previous_balance = 100;
-        $insertStmt = $conn->prepare("INSERT INTO meal_registration (id, deposit) VALUES (?, ?)");
-        $insertStmt->bind_param("id", $customer_id, $previous_balance);
-        $insertStmt->execute();
-        $insertStmt->close();
+        // If no existing deposit is found, set it to 0 (no deposit) for order purposes
+        $previous_balance = 0;
     }
     $checkStmt->close();
 
@@ -125,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     exit();
 }
 ?>
+
 
 
 
