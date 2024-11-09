@@ -48,16 +48,25 @@ $dinnerTotalPrice = $mealTotals['dinner'];
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $customer_id = $_SESSION['user_id']; // Assuming user_id is stored in session
 
-    // Fetch the current remaining balance (deposit) from meal_registration
+    // Fetch the current deposit from meal_registration
     $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE id = ?");
     $checkStmt->bind_param("i", $customer_id);
     $checkStmt->execute();
     $checkStmt->bind_result($previous_balance);
-    if (!$checkStmt->fetch()) {
-        // If no existing deposit is found, set it to 0 (no deposit) for order purposes
-        $previous_balance = 0;
-    }
+    $checkStmt->fetch();
     $checkStmt->close();
+
+    // If no deposit is found, insert initial deposit
+    if ($previous_balance === null) {
+        $previous_balance = 100;
+        $insertStmt = $conn->prepare("INSERT INTO meal_registration (id, deposit) VALUES (?, ?)");
+        $insertStmt->bind_param("id", $customer_id, $previous_balance);
+        if (!$insertStmt->execute()) {
+            echo "<div class='alert alert-danger'>Error inserting initial deposit: " . $insertStmt->error . "</div>";
+            exit();
+        }
+        $insertStmt->close();
+    }
 
     // Calculate new remaining balance after order
     $totalOrderPrice = $lunchTotalPrice + $dinnerTotalPrice;
@@ -105,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->close();
     }
 
-    // Update the deposit in meal_registration table based on the new remain_balance
+    // Update only the remaining balance in meal_registration
     $updateStmt = $conn->prepare("UPDATE meal_registration SET deposit = ? WHERE id = ?");
     $updateStmt->bind_param("di", $remain_balance, $customer_id);
 
@@ -121,8 +130,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     exit();
 }
 ?>
-
-
 
 
 <!DOCTYPE html>

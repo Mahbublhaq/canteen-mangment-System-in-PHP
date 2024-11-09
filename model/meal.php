@@ -45,13 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $meal_id = $product_id; // Use the product_id as the meal_id
         $lunch_meal = $_SESSION['cart'][$product_id]['product_name'];
         $dinner_meal = $lunch_meal; // Modify this logic if necessary
-        $deposit = 100; // Replace with your logic to get deposit amount
+        // $deposit = 100; // Replace with your logic to get deposit amount
         $meal_price = $_SESSION['cart'][$product_id]['price'];
         $remain_balance = $deposit - $meal_price;
 
         // Insert the order into the meal table
-        $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, dinner_meal, deposit, meal_price, remain_balance, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-        $stmt->bind_param("issdds", $meal_id, $lunch_meal, $dinner_meal, $deposit, $meal_price, $remain_balance);
+        $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, dinner_meal, meal_price, remain_balance, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->bind_param("issdds", $meal_id, $lunch_meal, $dinner_meal, $meal_price, $remain_balance);
 
         if ($stmt->execute()) {
             // Successfully inserted

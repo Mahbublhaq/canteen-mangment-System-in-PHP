@@ -54,3 +54,13 @@ CREATE TABLE meal_registration (
     meal_date DATE NOT NULL,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
+
+
+
+CREATE TABLE deposit_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    deposit_amount DECIMAL(10, 2) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES meal_registration(customer_id) ON DELETE CASCADE
+);

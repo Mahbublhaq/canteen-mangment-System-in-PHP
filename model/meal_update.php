@@ -2,41 +2,39 @@
 session_start();
 include '../db/db.php';
 
-// Fetch all meal registration data
-$allDataQuery = "SELECT mr.*, m.active AS meal_active, m.deposit AS meal_deposit, m.remain_balance AS remain_balance 
-                 FROM meal_registration AS mr 
-                 LEFT JOIN meal AS m ON mr.id = m.meal_id 
-                 GROUP BY mr.id";
-$allDataResult = $conn->query($allDataQuery);
+$successMessage = "";
+
+// Fetch all meal registration data with deposit from meal_registration table
+function fetchMealRegistrations($conn, $searchMealId = null, $searchName = null) {
+    $query = "SELECT mr.*, m.active AS meal_active, m.deposit AS meal_deposit, m.remain_balance AS remain_balance 
+              FROM meal_registration AS mr 
+              LEFT JOIN meal AS m ON mr.id = m.meal_id";
+    
+    if ($searchMealId || $searchName) {
+        $query .= " WHERE 1=1";
+        if ($searchMealId) {
+            $query .= " AND mr.id = " . intval($searchMealId);
+        }
+        if ($searchName) {
+            $query .= " AND mr.name LIKE '%" . $conn->real_escape_string($searchName) . "%'";
+        }
+    }
+    
+    $query .= " GROUP BY mr.id";
+    return $conn->query($query);
+}
 
 // Handle search functionality
-$searchQuery = "";
-if (isset($_POST['search'])) {
-    $meal_id = $_POST['meal_id'] ?? '';
-    $name = $_POST['name'] ?? '';
-
-    if ($meal_id || $name) {
-        $searchQuery .= " WHERE 1=1";
-        if ($meal_id) {
-            $searchQuery .= " AND mr.id = " . intval($meal_id);
-        }
-        if ($name) {
-            $searchQuery .= " AND mr.name LIKE '%" . $conn->real_escape_string($name) . "%'";
-        }
-
-        $allDataQuery = "SELECT mr.*, m.active AS meal_active, m.deposit AS meal_deposit, m.remain_balance AS remain_balance 
-                         FROM meal_registration AS mr 
-                         LEFT JOIN meal AS m ON mr.id = m.meal_id" . $searchQuery . " GROUP BY mr.id";
-        $allDataResult = $conn->query($allDataQuery);
-    }
-}
+$searchMealId = $_POST['meal_id'] ?? '';
+$searchName = $_POST['name'] ?? '';
+$allDataResult = fetchMealRegistrations($conn, $searchMealId, $searchName);
 
 // Toggle active status
 if (isset($_GET['toggle_id'])) {
-    $meal_id = $_GET['toggle_id'];
+    $mealId = $_GET['toggle_id'];
     $statusQuery = "SELECT active FROM meal WHERE meal_id = ?";
     $statusStmt = $conn->prepare($statusQuery);
-    $statusStmt->bind_param("i", $meal_id);
+    $statusStmt->bind_param("i", $mealId);
     $statusStmt->execute();
     $statusResult = $statusStmt->get_result();
     $currentStatus = $statusResult->fetch_assoc()['active'];
@@ -44,47 +42,57 @@ if (isset($_GET['toggle_id'])) {
 
     $updateStatusQuery = "UPDATE meal SET active = ? WHERE meal_id = ?";
     $updateStatusStmt = $conn->prepare($updateStatusQuery);
-    $updateStatusStmt->bind_param("ii", $newStatus, $meal_id);
+    $updateStatusStmt->bind_param("ii", $newStatus, $mealId);
     $updateStatusStmt->execute();
 
     header("Location: meal_update.php");
     exit();
 }
 
-$successMessage = "";
+// Function to update deposits in both meal_registration and meal tables and log in deposit_history
+function updateDeposits($conn, $mealId, $newDeposit) {
+    global $successMessage;
 
-// Update deposit only on "Update Meal"
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_meal'])) {
-    $meal_id = $_POST['meal_id'];
-    $new_deposit = $_POST['deposit'];
-
-    $checkQuery = "SELECT deposit FROM meal WHERE meal_id = ?";
+    // 1. Retrieve and update deposit in meal_registration
+    $checkQuery = "SELECT deposit FROM meal_registration WHERE id = ?";
     $checkStmt = $conn->prepare($checkQuery);
-    $checkStmt->bind_param("i", $meal_id);
+    $checkStmt->bind_param("i", $mealId);
     $checkStmt->execute();
     $checkResult = $checkStmt->get_result();
-
+    
     if ($checkResult->num_rows > 0) {
         $existingDeposit = $checkResult->fetch_assoc()['deposit'];
-        $totalDeposit = $existingDeposit + $new_deposit;
+        $updatedDeposit = $existingDeposit + $newDeposit;
 
-        if (!isset($_SESSION['last_deposit']) || $_SESSION['last_deposit'] != $new_deposit) {
-            $updateQuery = "UPDATE meal SET deposit = ?, remain_balance = ?, created_at = CURRENT_TIMESTAMP WHERE meal_id = ?";
-            $updateStmt = $conn->prepare($updateQuery);
-            $updateStmt->bind_param("ddi", $totalDeposit, $totalDeposit, $meal_id);
-            $updateStmt->execute();
-            $_SESSION['last_deposit'] = $new_deposit;
-            $successMessage = "Meal information updated successfully for meal ID: $meal_id";
-        }
-    } else {
-        $insertQuery = "INSERT INTO meal (meal_id, deposit, remain_balance, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
-        $insertStmt = $conn->prepare($insertQuery);
-        $insertStmt->bind_param("idd", $meal_id, $new_deposit, $new_deposit);
-        $insertStmt->execute();
-        $_SESSION['last_deposit'] = $new_deposit;
-        $successMessage = "Meal information inserted successfully for meal ID: $meal_id";
+        // Update deposit in meal_registration
+        $updateQuery = "UPDATE meal_registration SET deposit = ? WHERE id = ?";
+        $updateStmt = $conn->prepare($updateQuery);
+        $updateStmt->bind_param("di", $updatedDeposit, $mealId);
+        $updateStmt->execute();
     }
 
+    // 2. Update deposit in meal table to match meal_registration deposit
+    $mealUpdateQuery = "INSERT INTO meal (meal_id, deposit, remain_balance, created_at) 
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        ON DUPLICATE KEY UPDATE deposit = ?, remain_balance = ?";
+    $mealUpdateStmt = $conn->prepare($mealUpdateQuery);
+    $mealUpdateStmt->bind_param("idddd", $mealId, $updatedDeposit, $updatedDeposit, $updatedDeposit, $updatedDeposit);
+    $mealUpdateStmt->execute();
+
+    // 3. Insert the deposit amount into deposit_history table
+    $logDepositQuery = "INSERT INTO deposit_history (customer_id, deposit_amount) VALUES (?, ?)";
+    $logDepositStmt = $conn->prepare($logDepositQuery);
+    $logDepositStmt->bind_param("id", $mealId, $newDeposit);
+    $logDepositStmt->execute();
+
+    $successMessage = "Deposit successfully updated for meal ID: $mealId";
+}
+
+// Handle deposit update request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_meal'])) {
+    $mealId = $_POST['meal_id'];
+    $newDeposit = $_POST['deposit'];
+    updateDeposits($conn, $mealId, $newDeposit);
     echo "<meta http-equiv='refresh' content='2'>";
 }
 ?>
@@ -96,7 +104,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_meal'])) {
     <title>Meal Registration Data</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* Custom Styles */
         .container { margin-top: 50px; }
         table { width: 100%; }
         th, td { text-align: center; }
@@ -140,7 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_meal'])) {
                         <td class="radio-col"><input type="radio" name="meal_id" value="<?php echo $row['id']; ?>" onclick="selectRow(this)" required></td>
                         <td><?php echo $row['id']; ?></td>
                         <td><?php echo $row['name']; ?></td>
-                        <td><input type="number" name="deposit" value="<?php echo $row['meal_deposit'] ?? ''; ?>" step="0.01" class="form-control" disabled></td>
+                        <td>
+                            <input type="number" name="deposit" value="<?php echo $row['deposit'] ?? '0'; ?>" step="0.01" class="form-control" disabled>
+                        </td>
                         <td>
                             <a href="meal_update.php?toggle_id=<?php echo $row['id']; ?>">
                                 <button type="button" class="action-button <?php echo $row['meal_active'] ? 'active' : 'inactive'; ?>">
