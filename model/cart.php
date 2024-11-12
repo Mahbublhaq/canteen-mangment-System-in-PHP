@@ -26,11 +26,13 @@ if (isset($_GET['action']) && $_GET['action'] == 'remove') {
 function calculateMealTotals() {
     $totals = [
         'lunch' => 0,
-        'dinner' => 0
+        'dinner' => 0,
+        'overall' => 0
     ];
 
     foreach ($_SESSION['cart'] as $item) {
         $itemTotal = $item['price'] * $item['quantity'];
+        $totals['overall'] += $itemTotal;
         if ($item['product_name'] === "Lunch Meal") {
             $totals['lunch'] += $itemTotal;
         } elseif ($item['product_name'] === "Dinner Meal") {
@@ -43,10 +45,11 @@ function calculateMealTotals() {
 $mealTotals = calculateMealTotals();
 $lunchTotalPrice = $mealTotals['lunch'];
 $dinnerTotalPrice = $mealTotals['dinner'];
+$overallTotalPrice = $mealTotals['overall'];
 
 // Handle order placement
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
-    $customer_id = $_SESSION['user_id']; // Assuming user_id is stored in session
+    $customer_id = $_SESSION['user_id'];
 
     // Fetch the current deposit from meal_registration
     $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE id = ?");
@@ -56,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $checkStmt->fetch();
     $checkStmt->close();
 
-    // If no deposit is found, insert initial deposit
     if ($previous_balance === null) {
         $previous_balance = 100;
         $insertStmt = $conn->prepare("INSERT INTO meal_registration (id, deposit) VALUES (?, ?)");
@@ -72,13 +74,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $totalOrderPrice = $lunchTotalPrice + $dinnerTotalPrice;
     $remain_balance = $previous_balance - $totalOrderPrice;
 
-    // Check if balance is sufficient
     if ($remain_balance < 0) {
         echo "<div class='alert alert-danger'>Insufficient balance. Please add more funds.</div>";
         exit();
     }
 
-    // Count total quantities for Lunch Meal and Dinner Meal
     $lunch_total_quantity = 0;
     $dinner_total_quantity = 0;
 
@@ -90,11 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         }
     }
 
-    // Insert a row for Lunch Meal if any are in the cart
     if ($lunch_total_quantity > 0) {
         $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, lunch_quantity, meal_price, remain_balance, created_at) VALUES (?, 1, ?, ?, ?, NOW())");
         $stmt->bind_param("iidd", $customer_id, $lunch_total_quantity, $lunchTotalPrice, $remain_balance);
-
         if (!$stmt->execute()) {
             echo "<div class='alert alert-danger'>Error inserting Lunch Meal into meal table: " . $stmt->error . "</div>";
             exit();
@@ -102,11 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->close();
     }
 
-    // Insert a row for Dinner Meal if any are in the cart
     if ($dinner_total_quantity > 0) {
         $stmt = $conn->prepare("INSERT INTO meal (meal_id, dinner_meal, dinner_quantity, meal_price, remain_balance, created_at) VALUES (?, 1, ?, ?, ?, NOW())");
         $stmt->bind_param("iidd", $customer_id, $dinner_total_quantity, $dinnerTotalPrice, $remain_balance);
-
         if (!$stmt->execute()) {
             echo "<div class='alert alert-danger'>Error inserting Dinner Meal into meal table: " . $stmt->error . "</div>";
             exit();
@@ -114,22 +110,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->close();
     }
 
-    // Update only the remaining balance in meal_registration
     $updateStmt = $conn->prepare("UPDATE meal_registration SET deposit = ? WHERE id = ?");
     $updateStmt->bind_param("di", $remain_balance, $customer_id);
-
     if (!$updateStmt->execute()) {
         echo "<div class='alert alert-danger'>Error updating deposit: " . $updateStmt->error . "</div>";
         exit();
     }
     $updateStmt->close();
 
+    // Prepare order details and calculate total cost for insertion
+    $orderDetails = [];
+    $totalCost = 0;
+
+    foreach ($_SESSION['cart'] as $item) {
+        $orderDetails[] = [
+            'product_name' => $item['product_name'],
+            'quantity' => $item['quantity'],
+            'price' => $item['price']
+        ];
+        $totalCost += $item['price'] * $item['quantity'];
+    }
+
+    $orderDetailsJson = json_encode($orderDetails);
+
+    // Insert order into 'orders' table
+    $insertOrderStmt = $conn->prepare("INSERT INTO orders (customer_id, order_details, total_cost) VALUES (?, ?, ?)");
+    $insertOrderStmt->bind_param("isd", $customer_id, $orderDetailsJson, $totalCost);
+
+    if (!$insertOrderStmt->execute()) {
+        echo "<div class='alert alert-danger'>Error inserting order: " . $insertOrderStmt->error . "</div>";
+        exit();
+    }
+
+    $insertOrderStmt->close();
+
     // Clear cart after order
     unset($_SESSION['cart']);
-    header("Location: success.php"); // Redirect to a success page
+    header("Location: success.php");
     exit();
 }
 ?>
+
 
 
 <!DOCTYPE html>
@@ -204,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
             </tbody>
         </table>
         <div class="d-flex justify-content-between align-items-center">
-            <h4>Total Price: BDT <?php echo number_format($lunchTotalPrice + $dinnerTotalPrice, 2); ?></h4>
+            <h4>Total Price: BDT <?php echo number_format($overallTotalPrice, 2); ?></h4>
             <form method="POST" action="cart.php">
                 <button type="submit" name="place_order" class="btn btn-primary">Place Order</button>
             </form>
