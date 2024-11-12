@@ -123,11 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $totalCost = 0;
 
     foreach ($_SESSION['cart'] as $item) {
-        $orderDetails[] = [
-            'product_name' => $item['product_name'],
-            'quantity' => $item['quantity'],
-            'price' => $item['price']
-        ];
+        $orderDetails[] = "{$item['product_name']}*{$item['quantity']} BDT {$item['price']}";
+
         $totalCost += $item['price'] * $item['quantity'];
     }
 
