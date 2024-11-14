@@ -1,4 +1,7 @@
 <?php
+
+
+//session pick from login
 session_start();
 require '../db/db.php'; // Include database connection
 
@@ -95,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     </style>
 </head>
 <body>
+    <?php include '../menu/menu.php'; ?>
     <div class="container">
         <h1>Meal Menu</h1>
         <div class="product-grid">
@@ -128,6 +132,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
 </body>
 </html>
 
-<?php
-$conn->close();
-?>
+

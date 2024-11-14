@@ -51,6 +51,17 @@ $overallTotalPrice = $mealTotals['overall'];
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $customer_id = $_SESSION['user_id'];
 
+    //if user_id not found alert meaage show Please login first
+    if (!$customer_id) {
+        //best design for alert message add style
+        echo "<div class='alert alert-danger' style='font-size: 50px; padding: 10px; border-radius: 5px; background-color: #f8d7da; color: #721c24;'>Please login first</div>";
+
+
+       
+
+        exit();
+    }
+
     // Fetch the current deposit from meal_registration
     $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE id = ?");
     $checkStmt->bind_param("i", $customer_id);

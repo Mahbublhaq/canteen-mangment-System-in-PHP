@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
     }
     
     // Redirect back to avoid form resubmission
-    header("Location: meal.php");
+    header("Location: combo.php");
     exit();
 }
 
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meal Menu</title>
+    <title>Combo Offer</title>
     <link rel="stylesheet" href="style.css">
     <style>
         /* E-commerce Style */
@@ -95,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     </style>
 </head>
 <body>
+<?php include '../menu/menu.php'; ?>
     <div class="container">
         <h1>Combo Offer </h1>
         <div class="product-grid">
@@ -107,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                             <div class="product-description"><?php echo $row['product_details']; ?></div>
                             <div class="product-price">BDT <?php echo number_format($row['price'], 2); ?></div>
                             <div class="button-group">
-                                <form method="POST" action="meal.php" style="display:inline;">
+                                <form method="POST" action="combo.php" style="display:inline;">
                                     <input type="hidden" name="product_id" value="<?php echo $row['id']; ?>">
                                     <input type="hidden" name="product_name" value="<?php echo $row['product_name']; ?>">
                                     <input type="hidden" name="product_details" value="<?php echo $row['product_details']; ?>">
@@ -127,7 +128,3 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     </div>
 </body>
 </html>
-
-<?php
-$conn->close();
-?>
