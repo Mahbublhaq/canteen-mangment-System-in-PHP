@@ -1,9 +1,11 @@
 <?php
-//session_start();
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 require '../db/db.php';
 
 // Fetch customer name from the database if session exists
-$customer_name = "";
+$customer_name = isset($_SESSION['customer_name']) ? $_SESSION['customer_name'] : 'Guest';
 if (isset($_SESSION['user_id'])) {
     $customer_id = $_SESSION['user_id'];
     $stmt = $conn->prepare("SELECT customer_name FROM customers WHERE id = ?");
@@ -28,9 +30,19 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-commerce Menu Bar</title>
+    <title>City University Canteen</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome (for icons) -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<!-- Bootstrap CSS -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome (for icons) -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+
     <style>
         /* General Styles */
         body {
@@ -137,6 +149,54 @@ $conn->close();
             transform: scale(1.2);
             transition: all 0.3s ease-in-out;
         }
+
+        /* Logout Icon */
+        .logout-icon {
+            color: #f1f1f1;
+            font-size: 24px;
+            margin-left: 10px;
+            transition: color 0.3s ease;
+            margin-top: 5px;
+        }
+
+        .logout-icon:hover {
+            color: Red;
+        }
+
+
+        /* Category Dropdown */
+        .dropdown-menu {
+            background-color: #2C3E50;
+            border: none;
+            border-radius: 0;
+        }
+
+        .dropdown-item {
+            color: #ffffff;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            color: #00FFEA;
+            background-color: #2C3E50;
+        }
+
+        /* Cart and Profile Icons */
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-nav .nav-link {
+            margin: 0 10px;
+        }
+
+        /* Cart and Profile Icons */
+
+
+
+
     </style>
 </head>
 <body>
@@ -153,13 +213,24 @@ $conn->close();
     <div class="collapse navbar-collapse" id="navbarContent">
         <!-- Navbar Links -->
         <ul class="navbar-nav ml-auto">
-            <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-home"></i> Home</a></li>
-            <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-th-large"></i> Categories</a></li>
-            <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-percent"></i> Offers</a></li>
-            <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-info-circle"></i> About Us</a></li>
-            <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-phone-alt"></i> Contact</a></li>
-        </ul>
+    <li class="nav-item"><a class="nav-link icon-animated" href="/model/welcome.php"><i class="fas fa-home"></i> Home</a></li>
 
+    <!-- Categories Dropdown -->
+    <li class="nav-item dropdown" id="categoriesDropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" aria-expanded="false">
+            <i class="fas fa-th-large"></i> Categories
+        </a>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/model/hotoffer.php">Hot Offer</a></li>
+            <li><a class="dropdown-item" href="/model/combo.php">Combo Offer</a></li>
+            <li><a class="dropdown-item" href="/model/meal.php">Meal</a></li>
+        </ul>
+    </li>
+
+    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-percent"></i> Offers</a></li>
+    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-info-circle"></i> About Us</a></li>
+    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-phone-alt"></i> Contact</a></li>
+</ul>
         <!-- Search Bar -->
         <form class="search-bar mx-3 position-relative">
             <input type="text" placeholder="Search products..." class="form-control">
@@ -178,9 +249,19 @@ $conn->close();
                 <li class="nav-item">
     <a class="nav-link icon-animated" href="<?php echo $profile_link; ?>">
         <i class="fas fa-user profile-icon"></i>
-        <span class="customer-name"><?php echo htmlspecialchars($customer_name); ?></span>
+        <span class="customer-name"><?php echo htmlspecialchars($customer_name); ?>
+                    
+    </span>
+    
     </a>
 </li>
+<a href="/model/logout.php" class="logout-icon" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </li>
+            </li>
+
+
         </ul>
     </div>
 </nav>
@@ -190,5 +271,78 @@ $conn->close();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
+<script>
+
+document.getElementById("categoriesDropdown").addEventListener("click", function(event) {
+    // Check if the click is on the dropdown toggle, not on links inside the menu
+    if (event.target === this.querySelector("a.nav-link.dropdown-toggle")) {
+        event.preventDefault(); // Prevent navigation for the toggle only
+        const dropdownMenu = this.querySelector(".dropdown-menu");
+        dropdownMenu.classList.toggle("show"); // Toggle dropdown visibility
+    }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener("click", function(event) {
+    const dropdownMenu = document.querySelector(".dropdown-menu.show");
+    if (dropdownMenu && !event.target.closest("#categoriesDropdown")) {
+        dropdownMenu.classList.remove("show");
+    }
+});
+
+    //logout button hide if not login , show if login
+    <?php if (!isset($_SESSION['user_id'])): ?>
+    $('.logout-icon').hide();
+    <?php endif; ?>
+
+
+
+
+    //when click logout button show alert
+    $('.logout-icon').click(function () {
+        alert('You have been logged out successfully.');
+    });
+ //search bar 
+    $('.search-bar input').focus(function () {
+        $(this).animate({ width: '400px' }, 500);
+    });
+
+    $('.search-bar input').blur(function () {
+        $(this).animate({ width: '300px' }, 500);
+    });
+
+    //seaech with alphabet match alphabet in red color
+    $('.search-bar input').keyup(function () {
+        var searchText = $(this).val().toLowerCase();
+        var searchLength = searchText.length;
+
+        $('.product-card').each(function () {
+            var productName = $(this).find('.product-title').text().toLowerCase();
+            var productDescription = $(this).find('.product-description').text().toLowerCase();
+
+            if (productName.indexOf(searchText) > -1 || productDescription.indexOf(searchText) > -1) {
+                var regex = new RegExp(searchText, 'gi');
+                var highlightedName = productName.replace(regex, function (match) {
+                    return '<span style="color: red;">' + match + '</span>';
+                });
+                var highlightedDescription = productDescription.replace(regex, function (match) {
+                    return '<span style="color: red;">' + match + '</span>';
+                });
+
+                $(this).show();
+                $(this).find('.product-title').html(highlightedName);
+                $(this).find('.product-description').html(highlightedDescription);
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
+
+
+
+</script>
+
 </body>
 </html>
+

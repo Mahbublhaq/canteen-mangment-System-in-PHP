@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['email'] = $user['email'];
             $_SESSION['role'] = $role;
 
-            header("Location: " . ($role === 'admin' ? "/admin/dashboard.php" : "/model/meal_signup.php"));
+            header("Location: " . ($role === 'admin' ? "/admin/dashboard.php" : "/model/welcome.php"));
             exit;
         } else {
             echo "Invalid password.";

@@ -184,13 +184,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     </style>
 </head>
 <body>
-
+<?php  include '../menu/menu.php'   ?>
 <div class="container cart-container">
     <h2 class="text-center mb-4">Your Cart</h2>
     
     <?php if (empty($_SESSION['cart'])): ?>
         <div class="alert alert-warning text-center" role="alert">
-            Your cart is empty. <a href="meal.php" class="alert-link">Continue Shopping</a>
+            Your cart is empty. <a href="welcome.php" class="alert-link">Continue Shopping</a>
         </div>
     <?php else: ?>
         <table class="table table-hover table-bordered align-middle">
