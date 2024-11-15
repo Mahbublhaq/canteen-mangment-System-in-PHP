@@ -1,15 +1,10 @@
 <?php
-session_start();
+
 
 
 // Include the database connection
 require '../db/db.php';
 
-// Check if the user is logged in (modify as necessary)
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit();
-}
 
 // Handle the update of active status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
