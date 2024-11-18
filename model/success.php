@@ -16,7 +16,7 @@ session_start();
     <h2 class="text-center">Order Successful!</h2>
     <p class="text-center">Thank you for your order. Your meal will be prepared shortly.</p>
     <div class="text-center">
-        <a href="meal.php" class="btn btn-primary">Continue Shopping</a>
+        <a href="welcome.php" class="btn btn-primary">Continue Shopping</a>
     </div>
 </div>
 

@@ -11,7 +11,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if ($role == 'customers') {
         $table = 'customers';
     } elseif ($role == 'admin') {
-        $table = 'admin';
+        $table = 'admins';
     } else {
         die("Invalid role selected.");
     }

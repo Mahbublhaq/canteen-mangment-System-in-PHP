@@ -55,7 +55,7 @@ $conn->close();
         /* Navbar Styles */
         .navbar {
             background-color: #2C3E50;
-            padding: 15px 20px;
+            padding: 10px 20px;
             position: sticky;
             top: 0;
             width: 100%;
@@ -224,11 +224,14 @@ $conn->close();
             <li><a class="dropdown-item" href="/model/hotoffer.php">Hot Offer</a></li>
             <li><a class="dropdown-item" href="/model/combo.php">Combo Offer</a></li>
             <li><a class="dropdown-item" href="/model/meal.php">Meal</a></li>
+
         </ul>
     </li>
 
     <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-percent"></i> Offers</a></li>
-    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-info-circle"></i> About Us</a></li>
+    <!--Meal Registration-->
+   
+    <li class="nav-item"><a class="nav-link icon-animated" href="/model/meal_signup.php"><i class="fas fa-utensils"></i> Meal Registration</a></li>
     <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-phone-alt"></i> Contact</a></li>
 </ul>
         <!-- Search Bar -->
