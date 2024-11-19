@@ -68,31 +68,11 @@ include '../db/db.php'; // Include the database connection
             margin-bottom: 40px;
         }
 
-        
+        /* admin_cart make sure after headin and slide bar top:0 to make it  */
+       
+       
 
-        /* Today Sales Box */
-        .today-sales {
-            position: absolute;
-            top: 12%;
-            left: 20%;
-            
-            color: #fff;
-            padding: 10px 20px;
-            
-           
-            transition: background-color 0.3s ease;
-        }
-        .monthly-sales {
-            position: absolute;
-            top: 12%;
-            left: 35%;
-            
-            color: #fff;
-            padding: 10px 20px;
-            
-           
-            transition: background-color 0.3s ease;
-        }
+
        
     </style>
 </head>
@@ -104,7 +84,7 @@ include '../db/db.php'; // Include the database connection
         <h3>Admin Panel</h3>
         <a href="/model/orders.php">Orders</a>
         <a href="successful_orders.php">Successful Orders</a>
-        <a href="meals.php">Meals</a>
+        <a href="meal-sheet.php">Meal Sheet</a>
         <a href="/model/meal_update.php">Update Meals Info</a>
         <a href="/view/add_product.html">Add Product</a>
         <a href="/model/active_status.php">Product Status</a>
@@ -117,22 +97,13 @@ include '../db/db.php'; // Include the database connection
         <div class="header">Admin Dashboard</div>
 
         <!-- Today’s Sales Box (at the top-left) -->
-        <div class="today-sales">
+        <div class="admin_cart">
           
-            <p> <?php include '../model/todaysells.php'; ?></p>
+            <p> <?php include '../model/admin_cart.php'; ?></p>
             
         </div>
 
-        <!-- Monthly Sells -->
-        <div class="monthly-sales">
-          
-          <p> <?php include '../model/monthlysell.php'; ?></p>
-          
-      </div>
-
-
-    <!--New order insert in database show as a notification-->
-
+       
         
     </div>
 

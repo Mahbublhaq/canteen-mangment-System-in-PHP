@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['order_id'])) {
             // Content
             $mail->isHTML(true);
             $mail->Subject = 'Order Confirmation - City University Canteen';
-            $mail->Body    = "Hello $customerName,<br>Your order #$orderId has been confirmed.<br><br>Order Details:<br><ul>$orderDetailsFormatted</ul><br><div style='background-color: red; color: white; font-weight: bold; padding: 10px;width:10%;'>Total Cost: " . number_format($totalCost, 2) . " BDT</div><br><br>Thank you for ordering with us!<br><br>Best Regards,<br>City University Canteen Team,<br>Any queries? Contact us at: +8801601-337085,<br>Email: city_canteen@cityuniversity.ac.bd";
+            $mail->Body    = "Hello $customerName,<br>Your order #$orderId has been confirmed.<br><br>Order Details:<br><ul>$orderDetailsFormatted</ul><br><div style='background-color: red; color: white; font-weight: bold; padding: 10px;width:20%;'>Total Cost: " . number_format($totalCost, 2) . " BDT</div><br><br>Thank you for ordering with us!<br><br>Best Regards,<br>City University Canteen Team,<br>Any queries? Contact us at: +8801601-337085,<br>Email: city_canteen@cityuniversity.ac.bd";
 
             // Send the email
             if ($mail->send()) {
