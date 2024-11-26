@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
+            $_SESSION['name'] = $user['customer_name'] ?? $user['admin_name'];
             $_SESSION['role'] = $role;
 
             header("Location: " . ($role === 'admin' ? "/model/admin.php" : "/model/welcome.php"));

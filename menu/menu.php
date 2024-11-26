@@ -228,11 +228,11 @@ $conn->close();
         </ul>
     </li>
 
-    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-percent"></i> Offers</a></li>
+    <li class="nav-item"><a class="nav-link icon-animated" href="/model/offer.php"><i class="fas fa-percent"></i> Offers</a></li>
     <!--Meal Registration-->
    
     <li class="nav-item"><a class="nav-link icon-animated" href="/model/meal_signup.php"><i class="fas fa-utensils"></i> Meal Registration</a></li>
-    <li class="nav-item"><a class="nav-link icon-animated" href="#"><i class="fas fa-phone-alt"></i> Contact</a></li>
+    <li class="nav-item"><a class="nav-link icon-animated" href="../model/contact.php"><i class="fas fa-phone-alt"></i> Contact</a></li>
 </ul>
         <!-- Search Bar -->
         <form class="search-bar mx-3 position-relative">

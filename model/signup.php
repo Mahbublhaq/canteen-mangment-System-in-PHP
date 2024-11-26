@@ -60,7 +60,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         echo "Error: " . $conn->error;
     }
-
+    header("Location: ../view/login.html");
     // Close the connection
     $conn->close();
 }

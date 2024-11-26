@@ -1,18 +1,13 @@
 <?php
-
-//session pick from login
+// Start session and check user login status
 session_start();
-//check session id
 if (!isset($_SESSION['user_id'])) {
     header("Location: /view/login.html");
     exit();
 }
-///ptint session id
-// echo "Session ID: " . $_SESSION['user_id'] . "<br>";
 
 $customer_id = $_SESSION['user_id'];
-
-require '../db/db.php'; // Database connection
+require '../db/db.php';
 
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -28,16 +23,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             VALUES (?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("issdsss", $customer_id, $name, $department, $deposit, $varsity_id, $email, $meal_date);
-    
+
     if ($stmt->execute()) {
-        echo "<div class='success'>Meal registration successful!</div>";
+        $message = "<div class='success'>Meal registration successful! 
+                    <p class='note'>Note: Please bring your ID card copy and deposit amount to contact the Meal Manager.</p></div>";
     } else {
-        echo "<div class='error'>Error: " . $stmt->error . "</div>";
+        $message = "<div class='error'>Error: " . $stmt->error . "</div>";
     }
     $stmt->close();
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -48,109 +43,144 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         body {
             background: url('https://source.unsplash.com/1600x900/?meal,food') no-repeat center center fixed;
             background-size: cover;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+       
+        .registration-container {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
-            overflow: hidden;
+            margin-top: 50px;
         }
         .registration-form {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
             width: 400px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease-in-out;
-            transform: perspective(1000px) rotateY(0deg);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s;
         }
         .registration-form:hover {
-            transform: perspective(1000px) rotateY(10deg);
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
         }
         h2 {
-            font-weight: bold;
             text-align: center;
+            font-weight: bold;
             color: #2e86c1;
+            margin-bottom: 20px;
         }
         label {
-            display: block;
             font-weight: bold;
-            margin-top: 15px;
             color: #333;
+            margin-top: 10px;
         }
         input, select {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             margin-top: 5px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 14px;
         }
-        .btn {
-            background-color: #2e86c1;
-            color: white;
-            padding: 12px;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 20px;
-        }
-        .btn:hover {
-            background-color: #1b4f72;
-        }
+      
+
+        .bt {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    background-color: #595959; /* Default background color */
+    color: white; /* Text color */
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.bt:hover {
+    background-color: #ff69b4; 
+    color:white;/* Different color on hover (hot pink) */
+    transform: scale(1.05); /* Optional zoom-in effect */
+}
+
+
         .success, .error {
-            color: #28a745;
-            font-weight: bold;
+            width: 90%;
+            margin: 20px auto;
             text-align: center;
-            margin-top: 15px;
+            padding: 15px;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .note {
+            margin-top: 10px;
+            font-size: 14px;
+            font-style: italic;
+            color: #555;
         }
     </style>
 </head>
 <body>
+    <!-- <div class="menu-bar">
+        <div>Meal Registration System</div>
+        <div>
+            <a href="/menu/menu.php">Home</a>
+            <a href="/menu/menu.php">About</a>
+            <a href="/menu/menu.php">Contact</a>
+            <a href="/logout.php">Logout</a>
+        </div>
+    </div> -->
+<?php include '../menu/menu.php'   ?>
+    <div class="registration-container">
+        <div class="registration-form">
+            <h2>Meal Registration</h2>
+            <?php if (isset($message)) echo $message; ?>
+            <form action="" method="POST">
+                <label for="name">Full Name:</label>
+                <input type="text" name="name" required>
 
-<div class="registration-form">
-    <h2>Meal Registration</h2>
-    <form action="/model/meal_signup.php" method="POST">
-        <label for="name">Full Name:</label>
-        <input type="text" name="name" required>
+                <label for="department">Department:</label>
+                <select name="department" required>
+                    <option value="Computer Science">Computer Science & Engineering</option>
+                    <option value="Business Administration">Business Administration</option>
+                    <option value="Electrical Engineering">Electrical & Electronic Engineering</option>
+                    <option value="Civil Engineering">Civil Engineering</option>
+                    <option value="Pharmacy">Pharmacy</option>
+                    <option value="English">English</option>
+                    <option value="Law">Law</option>
+                    <option value="Others">Others</option>
+                </select>
 
-        <label for="department">Department:</label>
-        <select name="department" required>
-            <option value="Computer Science">Computer Science & Engineering</option>
-            <option value="Business Administration">Business Administration</option>
-            <option value="Electrical Engineering">Electrical & Electronic Engineering</option>
-            <option value="Civil Engineering">Civil Engineering</option>
-            <option value="Pharmacy">Pharmacy</option>
-            <option value="English">English</option>
-            <option value="Law">Law</option>
-            <option value="Others">Others</option>
+                <label for="deposit">Initial Deposit:</label>
+                <input type="number" step="0.01" name="deposit" placeholder="Minimum ADD 2000 TK" required>
 
-            <!-- Add more departments as needed -->
-        </select>
+                <label for="varsity_id">Varsity ID:</label>
+                <input type="text" name="varsity_id" required>
 
+                <label for="email">Email:</label>
+                <input type="email" name="email" required>
 
-        <label for="deposit">Initial Deposit:</label>
-        <input type="number" step="0.01" name="deposit" placeholder="Minimum ADD 2000 TK" required>
+                <label for="meal_date">Meal Date:</label>
+                <input type="date" name="meal_date" required>
 
+                <button type="submit" class="bt">Register Meal</button>
 
-        <label for="varsity_id">Varsity ID:</label>
-        <input type="text" name="varsity_id" required>
-
-        <label for="email">Email:</label>
-        <input type="email" name="email" required>
-
-        <label for="meal_date">Meal Date:</label>
-        <input type="date" name="meal_date" required>
-
-        <button type="submit" class="btn">Register Meal</button>
-    </form>
-</div>
-
+            </form>
+        </div>
+    </div>
 </body>
 </html>
-
-
