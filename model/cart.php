@@ -2,16 +2,27 @@
 session_start();
 require '../db/db.php';
 
+// Error reporting for development (remove or comment out in production)
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+
+// Initialize cart if not exists
+if (!isset($_SESSION['cart'])) {
+    $_SESSION['cart'] = [];
+}
 
 // Update cart functionality
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_cart'])) {
     $product_id = $_POST['product_id'];
     $new_quantity = (int)$_POST['quantity'];
+    
     if ($new_quantity > 0) {
-        $_SESSION['cart'][$product_id]['quantity'] = $new_quantity;
+        // If product already exists, update quantity
+        if (isset($_SESSION['cart'][$product_id])) {
+            $_SESSION['cart'][$product_id]['quantity'] = $new_quantity;
+        }
     } else {
+        // Remove item if quantity is 0 or less
         unset($_SESSION['cart'][$product_id]);
     }
 }
@@ -24,49 +35,67 @@ if (isset($_GET['action']) && $_GET['action'] == 'remove') {
 
 // Calculate total price for Lunch and Dinner items separately
 function calculateMealTotals() {
-    $totals = ['lunch' => 0, 'dinner' => 0, 'overall' => 0, 'combo_total' => 0];
-    foreach ($_SESSION['cart'] as $product_id => $item) {
-        $itemTotal = $item['price'] * $item['quantity'];
-        $totals['overall'] += $itemTotal;
+    $totals = [
+        'lunch' => 0, 
+        'dinner' => 0, 
+        'overall' => 0, 
+        'combo_total' => 0,
+        'subtotal' => 0
+    ];
+    
+    // Only process if cart is not empty
+    if (!empty($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $product_id => $item) {
+            $itemTotal = $item['price'] * $item['quantity'];
+            $totals['subtotal'] += $itemTotal;
+            $totals['overall'] += $itemTotal;
 
-        $checkCategoryStmt = $GLOBALS['conn']->prepare("SELECT catagorey FROM products WHERE id = ?");
-        $checkCategoryStmt->bind_param("i", $product_id);
-        $checkCategoryStmt->execute();
-        $checkCategoryStmt->bind_result($category);
-        $checkCategoryStmt->fetch();
-        $checkCategoryStmt->close();
+            // Check product category
+            $checkCategoryStmt = $GLOBALS['conn']->prepare("SELECT catagorey FROM products WHERE id = ?");
+            $checkCategoryStmt->bind_param("i", $product_id);
+            $checkCategoryStmt->execute();
+            $checkCategoryStmt->bind_result($category);
+            $checkCategoryStmt->fetch();
+            $checkCategoryStmt->close();
 
-        if ($item['product_name'] === "Lunch Meal") {
-            $totals['lunch'] += $itemTotal;
-        } elseif ($item['product_name'] === "Dinner Meal") {
-            $totals['dinner'] += $itemTotal;
-        }
+            // Categorize Lunch and Dinner meals
+            if ($item['product_name'] === "Lunch Meal") {
+                $totals['lunch'] += $itemTotal;
+            } elseif ($item['product_name'] === "Dinner Meal") {
+                $totals['dinner'] += $itemTotal;
+            }
 
-        if ($category === "Combo" || $category === "Hot Offer") {
-            $totals['combo_total'] += $itemTotal;
+            // Check for Combo or Hot Offer
+            if ($category === "Combo" || $category === "Hot Offer") {
+                $totals['combo_total'] += $itemTotal;
+            }
         }
     }
     return $totals;
 }
 
+// Calculate meal totals
 $mealTotals = calculateMealTotals();
 $lunchTotalPrice = $mealTotals['lunch'];
 $dinnerTotalPrice = $mealTotals['dinner'];
+$subtotalPrice = $mealTotals['subtotal'];
 $overallTotalPrice = $mealTotals['overall'];
 $comboTotal = $mealTotals['combo_total'];
 
-// Handle coupon code
-
+// Initialize discount variables
 $discountAmount = 0;
 $discountMessage = '';
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply'])) {
-    // Check if discount_code is set and not empty
-    if (!empty($_POST['discount_code'])) {
-        $discount_code = $_POST['discount_code'];
+$netTotal = $subtotalPrice;  // Initialize net total as subtotal
 
-        // Ensure comboTotal is already calculated before this check
+// Handle coupon code application
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply'])) {
+    // Check if discount code is provided
+    if (!empty($_POST['discount_code'])) {
+        $discount_code = trim($_POST['discount_code']);
+
+        // Check if combo total meets minimum requirement
         if ($comboTotal >= 200) {
-            // Prepare the query to fetch discount details
+            // Prepare query to fetch discount details
             $query = "SELECT discount_amount FROM offers WHERE discount_code = ? AND expiry_date >= CURDATE()";
             $checkStmt = $conn->prepare($query);
             $checkStmt->bind_param("s", $discount_code);
@@ -75,32 +104,57 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply'])) {
             $fetchResult = $checkStmt->fetch();
             $checkStmt->close();
 
-            if ($fetchResult && isset($discount_amount)) { // Check if a valid discount amount is retrieved
-                $discountAmount = $discount_amount;
-                $discountMessage = "Discount applied successfully!";
-                $overallTotalPrice -= $discountAmount; // Adjust the overall total
+            if ($fetchResult && $discount_amount > 0) {
+                // Ensure discount doesn't exceed subtotal
+                $discountAmount = min($discount_amount, $subtotalPrice);
+                $netTotal = max(0, $subtotalPrice - $discountAmount);
+                $discountMessage = "Discount of BDT " . number_format($discountAmount, 2) . " applied successfully!";
                 
+                // Store discount details in session
+                $_SESSION['applied_discount_code'] = $discount_code;
+                $_SESSION['discount_amount'] = $discountAmount;
+                $_SESSION['net_total'] = $netTotal;
             } else {
                 $discountMessage = "Invalid discount code or expired!";
+                $discountAmount = 0;
+                $netTotal = $subtotalPrice;
+                unset($_SESSION['applied_discount_code']);
+                unset($_SESSION['discount_amount']);
+                unset($_SESSION['net_total']);
             }
         } else {
             $discountMessage = "Coupon only valid for Combo/Hot Offer with a minimum spend of 200 tk!";
+            $discountAmount = 0;
+            $netTotal = $subtotalPrice;
+            unset($_SESSION['applied_discount_code']);
+            unset($_SESSION['discount_amount']);
+            unset($_SESSION['net_total']);
         }
     } else {
         $discountMessage = "Please enter a valid coupon code.";
+        $discountAmount = 0;
+        $netTotal = $subtotalPrice;
+        unset($_SESSION['applied_discount_code']);
+        unset($_SESSION['discount_amount']);
+        unset($_SESSION['net_total']);
     }
 }
 
-
 // Handle order placement
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
-    $customer_id = $_SESSION['user_id'];
-    $payment_method = $_POST['payment_method'] ?? 'Cash on Delivery';
-
-    if (!$customer_id) {
+    // Validate customer login
+    if (!isset($_SESSION['user_id'])) {
         echo "<div class='alert alert-danger'>Please login first.</div>";
         exit();
     }
+
+    $customer_id = $_SESSION['user_id'];
+    $payment_method = $_POST['payment_method'] ?? 'Cash on Delivery';
+
+    // Retrieve final totals from session or use defaults
+    $finalNetTotal = $_SESSION['net_total'] ?? $subtotalPrice;
+    $finalDiscountAmount = $_SESSION['discount_amount'] ?? 0;
+    $finalDiscountCode = $_SESSION['applied_discount_code'] ?? null;
 
     // Verify customer existence
     $checkCustomerStmt = $conn->prepare("SELECT id FROM customers WHERE id = ?");
@@ -130,6 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     // Calculate remaining balance
     $totalOrderPrice = $lunchTotalPrice + $dinnerTotalPrice;
 
+    // Retrieve customer's deposit
     $checkStmt = $conn->prepare("SELECT deposit FROM meal_registration WHERE customer_id = ?");
     $checkStmt->bind_param("i", $customer_id);
     $checkStmt->execute();
@@ -137,6 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $checkStmt->fetch();
     $checkStmt->close();
 
+    // Set default balance if not found
     if ($previous_balance === null) {
         $previous_balance = 100; // Default balance
         $insertStmt = $conn->prepare("INSERT INTO meal_registration (customer_id, deposit) VALUES (?, ?)");
@@ -145,13 +201,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $insertStmt->close();
     }
 
+    // Calculate remaining balance
     $remain_balance = $previous_balance - $totalOrderPrice;
 
+    // Check if sufficient balance
     if ($remain_balance < 0) {
         echo "<div class='alert alert-danger'>Insufficient balance. Please add more funds.</div>";
         exit();
     }
 
+    // Calculate meal quantities
     $lunch_total_quantity = 0;
     $dinner_total_quantity = 0;
 
@@ -163,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         }
     }
 
-    // Insert or update meals
+    // Insert or update lunch meals
     if ($lunch_total_quantity > 0) {
         $stmt = $conn->prepare("INSERT INTO meal (meal_id, lunch_meal, lunch_quantity, meal_price, remain_balance, created_at) 
                                 VALUES (?, 1, ?, ?, ?, NOW()) 
@@ -174,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->close();
     }
 
+    // Insert or update dinner meals
     if ($dinner_total_quantity > 0) {
         $stmt = $conn->prepare("INSERT INTO meal (meal_id, dinner_meal, dinner_quantity, meal_price, remain_balance, created_at) 
                                 VALUES (?, 1, ?, ?, ?, NOW()) 
@@ -184,26 +244,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         $stmt->close();
     }
 
-    // Update deposit
+    // Update customer deposit
     $updateStmt = $conn->prepare("UPDATE meal_registration SET deposit = ? WHERE customer_id = ?");
     $updateStmt->bind_param("di", $remain_balance, $customer_id);
     $updateStmt->execute();
     $updateStmt->close();
 
-    // Insert order with correct net total
+    // Prepare order details
     $orderDetails = json_encode($_SESSION['cart']);
-     $netTotal = $overallTotalPrice - $discountAmount; // Calculate net total by subtracting discount
-
-    $insertOrderStmt = $conn->prepare("INSERT INTO orders (customer_id, order_details, total_cost, net_total, payment_method) VALUES (?, ?, ?, ?, ?)");
-    $insertOrderStmt->bind_param("isdds", $customer_id, $orderDetails, $overallTotalPrice, $netTotal, $payment_method);
+    
+    // Insert order with final totals
+    $insertOrderStmt = $conn->prepare("INSERT INTO orders (
+        customer_id, 
+        order_details, 
+        total_cost, 
+        subtotal, 
+        discount_amount, 
+        net_total, 
+        payment_method, 
+        discount_code
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $insertOrderStmt->bind_param(
+        "isddddss", 
+        $customer_id, 
+        $orderDetails, 
+        $subtotalPrice,  
+        $subtotalPrice,  
+        $finalDiscountAmount, 
+        $finalNetTotal,  
+        $payment_method,
+        $finalDiscountCode
+    );
     $insertOrderStmt->execute();
     $insertOrderStmt->close();
 
+    // Clear session variables
     unset($_SESSION['cart']);
+    unset($_SESSION['applied_discount_code']);
+    unset($_SESSION['discount_amount']);
+    unset($_SESSION['net_total']);
+
+    // Redirect to success page
     header("Location: success.php");
     exit();
 }
-
 ?>
 
 
@@ -351,33 +435,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
                         <h4 class="border-bottom pb-2 mb-3">Order Summary</h4>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal</span>
-                            <strong>BDT <?php echo number_format($overallTotalPrice, 2); ?></strong>
+                            <strong>BDT <?php echo number_format($subtotalPrice, 2); ?></strong>
                         </div>
-                        <!-- <div class="d-flex justify-content-between mb-2">
-                            <span>Delivery</span>
-                            <strong>BDT 50.00</strong>
-                        </div> -->
-                        <!--cupon code fielf-->
+                        
                         <!-- Coupon Code Section -->
-        <div class="mb-3">
-            <form method="POST" action="cart.php">
-                <label class="form-label">Coupon Code</label>
-                <div class="input-group">
-                    <input type="text" name="discount_code" class="form-control" placeholder="Enter Coupon Code">
-                    <button type="submit" name="apply" class="btn btn-primary">Apply</button>
-                </div>
-                <?php if (!empty($discountMessage)): ?>
-                    <div class="alert <?php echo $discountAmount > 0 ? 'alert-success' : 'alert-danger'; ?> mt-2">
-                        <?php echo htmlspecialchars($discountMessage); ?>
-                    </div>
-                <?php endif; ?>
-            </form>
-        </div>
+                        <div class="mb-3">
+                            <form method="POST" action="cart.php">
+                                <label class="form-label">Coupon Code</label>
+                                <div class="input-group">
+                                    <input type="text" name="discount_code" class="form-control" placeholder="Enter Coupon Code">
+                                    <button type="submit" name="apply" class="btn btn-primary">Apply</button>
+                                </div>
+                                <?php if (!empty($discountMessage)): ?>
+                                    <div class="alert <?php echo $discountAmount > 0 ? 'alert-success' : 'alert-danger'; ?> mt-2">
+                                        <?php echo htmlspecialchars($discountMessage); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </form>
+                        </div>
+
+                        <?php if ($discountAmount > 0): ?>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Discount</span>
+                                <strong class="text-danger">- BDT <?php echo number_format($discountAmount, 2); ?></strong>
+                            </div>
+                        <?php endif; ?>
 
                         <div class="d-flex justify-content-between mb-3 pt-2 border-top">
                             <h5>Total</h5>
-                            <h5>BDT <?php echo number_format($overallTotalPrice, 2); ?></h5>
-
+                            <h5>BDT <?php echo number_format($netTotal, 2); ?></h5>
                         </div>
 
                         <form method="POST" action="cart.php">
@@ -412,15 +498,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     });
 
     // Remove alert messages after 5 seconds
-
     setTimeout(() => {
         document.querySelectorAll('.alert').forEach(alert => {
             alert.style.display = 'none';
         });
     }, 5000);
-
-   
-
-
 </script>
 </html>

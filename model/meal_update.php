@@ -10,14 +10,14 @@ function updateDeposits($conn, $mealId, $newDeposit) {
     global $successMessage;
 
     // Fetch existing deposit
-    // Assuming $mealId and $newDeposit are set from POST or GET
-$mealId = $_POST['meal_id']; // Replace with actual source
-$newDeposit = $_POST['new_deposit']; // Replace with actual source
+//     // Assuming $mealId and $newDeposit are set from POST or GET
+// $mealId = $_POST['meal_id']; // Replace with actual source
+// $newDeposit = $_POST['new_deposit']; // Replace with actual source
 
-// Validate inputs
-if (!is_numeric($mealId) || !is_numeric($newDeposit)) {
-    die("Invalid input data. Meal ID and Deposit must be numeric.");
-}
+// // Validate inputs
+// if (!is_numeric($mealId) || !is_numeric($newDeposit)) {
+//     die("Invalid input data. Meal ID and Deposit must be numeric.");
+// }
 
 // Database connection ($conn should already be established)
 

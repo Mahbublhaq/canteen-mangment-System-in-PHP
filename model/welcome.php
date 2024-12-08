@@ -69,9 +69,9 @@ $conn->close();
         .section-title {
             text-align: center;
             font-weight: bold;
-            color: #007bff;
+            color: Black;
             margin: 30px 0;
-            font-size: 1.8rem;
+            font-size: 2.8rem;
         }
 
         .product-card {

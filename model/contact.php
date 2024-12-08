@@ -92,12 +92,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background: linear-gradient(45deg, #f3f4f8, #e0e7ff);
+            background: white;
+         
         }
 
         .contact-header {
-            background: #4a90e2;
-            color: white;
+         
+            font-weight: 600;
+            color:black;
             padding: 20px;
             text-align: center;
             border-radius: 10px;
@@ -182,7 +184,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="contact-card p-4">
-                    <h3 class="text-center">Send Us Your Query</h3>
+                    <h3 class="text-center"style="color:red;font-weight: 600;">Send Us Your Query</h3>
                     <form id="contact-form" method="POST" action="">
                         <div class="mb-3">
                             <label for="name" class="form-label">Customer Name</label>

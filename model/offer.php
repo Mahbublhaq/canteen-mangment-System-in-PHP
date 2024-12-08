@@ -20,10 +20,10 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
-            background: linear-gradient(120deg, #000428, #004e92);
+            background: AliceBlue;
             font-family: 'Arial', sans-serif;
             animation: gradientBackground 8s infinite alternate;
-            color: #fff;
+            color: black;
         }
 
         @keyframes gradientBackground {
@@ -32,8 +32,12 @@ $result = $conn->query($sql);
         }
 
         h2 {
-            color: #ffcc00;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.7);
+            color: Black;
+            font-weight: bold;
+            
+            
+
+
         }
 
         .coupon-card {

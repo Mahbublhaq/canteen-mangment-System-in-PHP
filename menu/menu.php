@@ -54,7 +54,8 @@ $conn->close();
 
         /* Navbar Styles */
         .navbar {
-            background-color: #2C3E50;
+            background-color: Crimson;
+            color:#F0FFFF;
             padding: 10px 20px;
             position: sticky;
             top: 0;
@@ -116,8 +117,8 @@ $conn->close();
         .cart-notify {
             position: relative;
             font-size: 16px;
-            color: #fff;
-            background-color: red;
+            color: black;
+            background-color: #00FFEA;
             border-radius: 50%;
             padding: 5px 10px;
             top: -10px;
@@ -134,7 +135,7 @@ $conn->close();
         .customer-name {
             color: #00FFEA;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             margin-left: 10px;
             transition: color 0.3s ease;
         }
@@ -160,13 +161,13 @@ $conn->close();
         }
 
         .logout-icon:hover {
-            color: Red;
+            color: yellow;
         }
 
 
         /* Category Dropdown */
         .dropdown-menu {
-            background-color: #2C3E50;
+            background-color: Crimson;
             border: none;
             border-radius: 0;
         }

@@ -57,11 +57,21 @@ CREATE TABLE meal_registration (
 
 
 CREATE TABLE deposit_history (
+
     id INT AUTO_INCREMENT PRIMARY KEY,
+
     customer_id INT NOT NULL,
+
+    payment_method ENUM('Bkash', 'Nagad', 'Card') NOT NULL,
+
+    payment_details VARCHAR(255), -- For card info or mobile number
+
     deposit_amount DECIMAL(10, 2) NOT NULL,
+
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (customer_id) REFERENCES meal_registration(customer_id) ON DELETE CASCADE
+
 );
 
 CREATE TABLE `offers` (

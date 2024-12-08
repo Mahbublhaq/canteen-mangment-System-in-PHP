@@ -30,6 +30,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $message = "<div class='error'>Error: " . $stmt->error . "</div>";
     }
+
+ 
+
+
+
+
+
     $stmt->close();
 }
 ?>
