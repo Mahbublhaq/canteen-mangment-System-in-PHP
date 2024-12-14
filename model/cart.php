@@ -151,10 +151,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $customer_id = $_SESSION['user_id'];
     $payment_method = $_POST['payment_method'] ?? 'Cash on Delivery';
 
-    // Retrieve final totals from session or use defaults
-    $finalNetTotal = $_SESSION['net_total'] ?? $subtotalPrice;
-    $finalDiscountAmount = $_SESSION['discount_amount'] ?? 0;
-    $finalDiscountCode = $_SESSION['applied_discount_code'] ?? null;
+    // Prepare order details and total cost
+    $orderDetails = [];
+    $totalCost = 0;
+    
+    foreach ($_SESSION['cart'] as $item) {
+        $orderDetails[] = "{$item['product_name']}*{$item['quantity']} BDT {$item['price']}";
+        $totalCost += $item['price'] * $item['quantity'];
+    }
+    
+    // Convert order details to JSON
+    $orderDetailsJson = json_encode($orderDetails);
+
+    // Determine final totals based on discount
+    $finalSubtotal = $subtotalPrice;
+    $finalDiscountAmount = 0;
+    $finalNetTotal = $subtotalPrice;
+    $finalDiscountCode = null;
+
+    // Check if a discount was applied
+    if (isset($_SESSION['applied_discount_code']) && 
+        isset($_SESSION['discount_amount']) && 
+        isset($_SESSION['net_total'])) {
+        $finalDiscountAmount = $_SESSION['discount_amount'];
+        $finalNetTotal = $_SESSION['net_total'];
+        $finalDiscountCode = $_SESSION['applied_discount_code'];
+    }
 
     // Verify customer existence
     $checkCustomerStmt = $conn->prepare("SELECT id FROM customers WHERE id = ?");
@@ -177,11 +199,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $checkMealStmt->close();
 
     if (!$isActive) {
-        echo "<div class='alert alert-warning'>Please wait for verification by the meal manager.</div>";
+        echo "<div class='alert alert-warning'>Please Registration For Orders and Verify Details Submit </div>";
         exit();
     }
 
-    // Calculate remaining balance
+    // Calculate meal quantities
+    $lunch_total_quantity = 0;
+    $dinner_total_quantity = 0;
+
+    foreach ($_SESSION['cart'] as $product_id => $item) {
+        if ($item['product_name'] === "Lunch Meal") {
+            $lunch_total_quantity += $item['quantity'];
+        } elseif ($item['product_name'] === "Dinner Meal") {
+            $dinner_total_quantity += $item['quantity'];
+        }
+    }
+
+    // Calculate total order price and remaining balance
     $totalOrderPrice = $lunchTotalPrice + $dinnerTotalPrice;
 
     // Retrieve customer's deposit
@@ -208,18 +242,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     if ($remain_balance < 0) {
         echo "<div class='alert alert-danger'>Insufficient balance. Please add more funds.</div>";
         exit();
-    }
-
-    // Calculate meal quantities
-    $lunch_total_quantity = 0;
-    $dinner_total_quantity = 0;
-
-    foreach ($_SESSION['cart'] as $product_id => $item) {
-        if ($item['product_name'] === "Lunch Meal") {
-            $lunch_total_quantity += $item['quantity'];
-        } elseif ($item['product_name'] === "Dinner Meal") {
-            $dinner_total_quantity += $item['quantity'];
-        }
     }
 
     // Insert or update lunch meals
@@ -250,10 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     $updateStmt->execute();
     $updateStmt->close();
 
-    // Prepare order details
-    $orderDetails = json_encode($_SESSION['cart']);
-    
-    // Insert order with final totals
+    // Prepare order insertion
     $insertOrderStmt = $conn->prepare("INSERT INTO orders (
         customer_id, 
         order_details, 
@@ -264,18 +283,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
         payment_method, 
         discount_code
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+
+    // Bind parameters
     $insertOrderStmt->bind_param(
-        "isddddss", 
+        "ssddddss", 
         $customer_id, 
-        $orderDetails, 
-        $subtotalPrice,  
-        $subtotalPrice,  
+        $orderDetailsJson, 
+        $totalCost,  
+        $finalSubtotal,  
         $finalDiscountAmount, 
         $finalNetTotal,  
         $payment_method,
         $finalDiscountCode
     );
-    $insertOrderStmt->execute();
+
+    // Execute order insertion
+    if (!$insertOrderStmt->execute()) {
+        echo "<div class='alert alert-danger'>Error inserting order: " . $insertOrderStmt->error . "</div>";
+        exit();
+    }
     $insertOrderStmt->close();
 
     // Clear session variables

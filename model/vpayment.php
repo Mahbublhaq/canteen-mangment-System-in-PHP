@@ -1,9 +1,30 @@
 <?php
 session_start();
-include('../db/db.php'); // Include your database connection file
+include('../db/db.php');
+
+// Include your database connection file
+
+//if session not found give alert message to login
+if (!isset($_SESSION['user_id'])) {
+    echo "<script>alert('Please login first.')</script>";
+    echo "<script>window.location.href = '../view/login.html'</script>";
+    exit();
+}
+
+
 
 // Assuming customer_id is stored in the session
 $customer_id = $_SESSION['user_id'];
+
+//if customer_id=meal table meal_id $sql="select meal_id from meal where meal_id='$customer_id'"; not found show alert message Please deposit first or Plesae wait for Validity check
+$sql = "SELECT meal_id FROM meal WHERE meal_id='$customer_id'";
+$result = $conn->query($sql);
+
+if ($result->num_rows === 0) {
+    echo "<script>alert('Please deposit first or wait for validity check.')</script>";
+    echo "<script>window.location.href = '../model/welcome.php'</script>";
+    exit();
+}
 
 // Fetch customer details including profile picture
 $customerQuery = "SELECT c.customer_name, c.email, c.phone, c.address, 
@@ -42,8 +63,53 @@ $orderResult = $conn->query($orderQuery);
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+
+<nav class="bg-red-500 text-white shadow-lg fixed w-full top-0 z-50">
+        <div class="container mx-auto px-4 flex justify-between items-center py-3">
+            <!-- Logo Section -->
+            <div class="flex items-center space-x-2">
+                <span class="text-lg font-semibold">City University Canteen</span>
+            </div>
+            <!-- Menu Items -->
+            <div class="flex space-x-6 text-sm font-medium">
+                <a href="welcome.php" class="flex items-center space-x-1 menu-item hover:text-blue-300 transition">
+                    <i class="ri-home-line"></i>
+                    <span>Home</span>
+                </a>
+                <a href="cart.php" class="flex items-center space-x-1 menu-item hover:text-blue-300 transition">
+                    <i class="ri-shopping-cart-line"></i>
+                    <span>Cart</span>
+                </a>
+                <!-- Dropdown Menu -->
+                <div class="relative dropdown">
+                    <a href="#" class="flex items-center space-x-1 menu-item hover:text-blue-300 transition">
+                        <i class="ri-apps-line"></i>
+                        <span>Category</span>
+                        <i class="ri-arrow-down-s-line"></i>
+                    </a>
+                    <div class="absolute left-0 mt-2 bg-white text-blue-900 rounded shadow-lg dropdown-menu hidden">
+                        <a href="hotoffer.php" class="block px-4 py-2 hover:bg-blue-100">Hot Offer</a>
+                        <a href="combo.php" class="block px-4 py-2 hover:bg-blue-100">Combo</a>
+                        <a href="meal.php" class="block px-4 py-2 hover:bg-blue-100">Meal</a>
+                    </div>
+                </div>
+                <a href="logout.php" class="flex items-center space-x-1 menu-item hover:text-blue-300 transition">
+                    <i class="ri-logout-box-line"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+
+
+
+
+
+
+
+<body class="bg-gray-100"style="margin-top:2%;">
+   <div class="container mx-auto px-4 py-8 max-w-4xl">
         <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
             <!-- Header Section -->
             <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6">
@@ -60,6 +126,7 @@ $profile_pic = !empty($customerData['profile_picture'])
         <img src="<?php echo $profile_pic; ?>" 
              alt="Profile Picture" 
              class="w-full h-full object-cover">
+             
     <?php else: ?>
         <div class="w-full h-full bg-blue-200 flex items-center justify-center text-blue-600">
             <i class="ri-user-line text-4xl"></i>
@@ -76,7 +143,9 @@ $profile_pic = !empty($customerData['profile_picture'])
                         <p class="text-blue-100">
                             <?php echo htmlspecialchars($customerData['email']); ?>
                         </p>
+                        
                     </div>
+                    <img src="../static/logo.png" alt="Logo" class="w-40 h-30  id="profile-preview" style="margin-left: 40%;">
                 </div>
             </div>
 
@@ -118,7 +187,7 @@ $profile_pic = !empty($customerData['profile_picture'])
                     <!-- Quick Actions -->
                     <div class="bg-purple-50 p-4 rounded-lg">
                         <h2 class="text-xl font-semibold text-purple-700 mb-4">
-                            <i class="ri-money-dollar-circle-line mr-2"></i>Quick Actions
+                            <i class="ri-money-dollar-circle-line mr-2"></i>Deposit Funds
                         </h2>
                         <div class="grid grid-cols-2 gap-2">
                             <a href="bkash_payment.php" class="bg-blue-500 text-white p-2 rounded text-center hover:bg-blue-600 transition">
@@ -155,18 +224,32 @@ $profile_pic = !empty($customerData['profile_picture'])
                                     <tr class="border-b hover:bg-gray-100">
                                         <td class="p-3"><?php echo htmlspecialchars(date('Y-m-d', strtotime($order['created_at']))); ?></td>
                                         <td class="p-3">
-                                            <ul class="list-disc pl-5 text-gray-700">
-                                                <?php 
-                                                $orderDetails = json_decode($order['order_details'], true);
-                                                foreach ($orderDetails as $item): ?>
-                                                    <li>
-                                                        <?php echo htmlspecialchars($item['product_name']); ?> 
-                                                        x<?php echo $item['quantity']; ?> 
-                                                        (<?php echo number_format($item['price'], 2); ?> TK)
-                                                    </li>
-                                                <?php endforeach; ?>
-                                            </ul>
-                                        </td>
+    <ul class="list-disc pl-5 text-gray-700">
+        <?php 
+        // Decode the order_details as an associative array
+        $orderDetails = json_decode($order['order_details'], true);
+
+        // Check if decoding was successful and the result is an array
+        if (is_array($orderDetails)) {
+            foreach ($orderDetails as $item) {
+                // Ensure each item is an array and contains the expected keys
+                if (is_array($item) && isset($item['product_name'], $item['quantity'])) {
+                    echo '<li>';
+                    echo htmlspecialchars($item['product_name']) . ' * ';
+                    echo htmlspecialchars($item['quantity']);
+                    echo '</li>';
+                } else {
+                    echo '<li class="text-red-500"> ' . htmlspecialchars(json_encode($item)) . '</li>';
+                }
+            }
+        } else {
+            echo '<li class="text-gray-500">Invalid or missing order details.</li>';
+        }
+        ?>
+    </ul>
+</td>
+
+
                                         <td class="p-3 text-right"><?php echo number_format($order['total_cost'], 2); ?> TK</td>
                                     </tr>
                                 <?php endwhile; ?>
@@ -179,5 +262,23 @@ $profile_pic = !empty($customerData['profile_picture'])
             </div>
         </div>
     </div>
+    <script>
+         //dropdown menu
+         const dropdowns = document.querySelectorAll('.dropdown');
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function() {
+                this.querySelector('.dropdown-menu').classList.toggle('hidden');
+            });
+        });
+        //close dropdown menu on click outside
+        window.addEventListener('click', function(e) {
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(e.target)) {
+                    dropdown.querySelector('.dropdown-menu').classList.add('hidden');
+                }
+            });
+        });
+    
+    </script>
 </body>
 </html>

@@ -143,12 +143,44 @@ $conn->close();
             background-color: #0056b3;
             color: #fff;
         }
+
+        .marquee-container {
+            position: relative;
+            
+            overflow: hidden;
+            
+            color:darkred;
+            padding: 10px 0;
+        }
+
+        .marquee-text {
+            display: inline-block;
+           
+            white-space: nowrap;
+            animation: scroll 25s linear infinite;
+            font-size: 1 rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+           
+        }
+
+        @keyframes scroll {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
     </style>
 </head>
 <body>
 
 <?php include '../menu/menu.php'; ?>
-
+<div class="marquee-container" >
+        <div class="marquee-text">
+            Welcome To City Canteen || 🎉 Discount Starts Now ✨ Use Coupon Code!
+        </div>
 <div class="container mt-5">
     <h2 class="section-title">Hot Offers</h2>
     <div class="row">

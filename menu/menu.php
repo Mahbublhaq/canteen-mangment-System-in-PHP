@@ -20,7 +20,7 @@ if (isset($_SESSION['user_id'])) {
 $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
 
 // Check if user_id is set in the session (user is logged in)
-$profile_link = isset($_SESSION['user_id']) ? "/model/profile.php" : "/view/login.html";
+$profile_link = isset($_SESSION['user_id']) ? "/model/profile.php" : "/model/login.php";
 
 $conn->close();
 
@@ -54,9 +54,8 @@ $conn->close();
 
         /* Navbar Styles */
         .navbar {
-            background-color: Crimson;
-            color:#F0FFFF;
-            padding: 10px 20px;
+            background-color:#DC143C;
+            padding: 10px 10px;
             position: sticky;
             top: 0;
             width: 100%;
@@ -64,8 +63,8 @@ $conn->close();
         }
 
         .navbar-brand {
-            color: #00FFEA;
-            font-size: 28px;
+            color: #ffffff;
+            font-size: 24px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -77,9 +76,9 @@ $conn->close();
         }
 
         .navbar-nav .nav-link {
-            color: #ffffff;
+            color:rgb(246, 50, 50);
             font-size: 18px;
-            margin: 0 15px;
+            margin: 0 10px;
             font-weight: bold;
             text-transform: capitalize;
             padding: 10px;
@@ -93,7 +92,7 @@ $conn->close();
 
         /* Search Bar Styles */
         .search-bar input {
-            width: 300px;
+            width: 250px;
             padding: 10px;
             font-size: 16px;
             border-radius: 25px;
@@ -118,7 +117,7 @@ $conn->close();
             position: relative;
             font-size: 16px;
             color: black;
-            background-color: #00FFEA;
+            background-color: 	#00FFFF;
             border-radius: 50%;
             padding: 5px 10px;
             top: -10px;
@@ -135,7 +134,7 @@ $conn->close();
         .customer-name {
             color: #00FFEA;
             font-weight: bold;
-            font-size: 16px;
+            font-size: 18px;
             margin-left: 10px;
             transition: color 0.3s ease;
         }
@@ -161,14 +160,14 @@ $conn->close();
         }
 
         .logout-icon:hover {
-            color: yellow;
+            color: ADFF2F;
         }
 
 
         /* Category Dropdown */
         .dropdown-menu {
-            background-color: Crimson;
-            border: none;
+            background-color:#df0944;
+            border: 1px solidrgb(233, 129, 24);
             border-radius: 0;
         }
 
@@ -179,8 +178,8 @@ $conn->close();
         }
 
         .dropdown-item:hover {
-            color: #00FFEA;
-            background-color: #2C3E50;
+            color:rgb(249, 115, 19);
+            /* background-color: darkred; */
         }
 
         /* Cart and Profile Icons */
@@ -194,6 +193,36 @@ $conn->close();
         }
 
         /* Cart and Profile Icons */
+
+       #mealDropdown{
+            position: relative;
+        }
+
+        #mealDropdown .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #df0944;
+            border: 1px solidrgb(246, 115, 8);
+            border-radius: 0;
+            display: none;
+        }
+
+        #mealDropdown .dropdown-menu.show {
+            display: block;
+        }
+
+        #mealDropdown .dropdown-item {
+            color: #ffffff;
+            font-size: 16px;
+            transition: color 0.3s ease;
+        }
+
+        #mealDropdown .dropdown-item:hover {
+            color:rgb(245, 92, 36);
+            /* background-color: black; */
+
+       }
 
 
 
@@ -232,7 +261,23 @@ $conn->close();
     <li class="nav-item"><a class="nav-link icon-animated" href="/model/offer.php"><i class="fas fa-percent"></i> Offers</a></li>
     <!--Meal Registration-->
    
-    <li class="nav-item"><a class="nav-link icon-animated" href="/model/meal_signup.php"><i class="fas fa-utensils"></i> Meal Registration</a></li>
+    <!-- <li class="nav-item"><a class="nav-link icon-animated" href="/model/meal_signup.php"><i class="fas fa-utensils"></i> Meal Registration</a></li>
+    Meal Information-->
+    <!-- <li class="nav-item"><a class="nav-link icon-animated" href="/model/vpayment.php"><i class="fas fa-info"></i> Meal Information</a></li> -->
+
+    <li class="nav-item dropdown" id="mealDropdown">
+        <a class="nav-link dropdown-toggle" href="#" role="button" aria-expanded="false">
+            <i class="fas fa-th-large"></i> Meal
+        </a>
+        <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="/model/meal_signup.php">Meal Registration</a></li>
+            <li><a class="dropdown-item" href="/model/vpayment.php">Meal Information</a></li>
+        </ul>
+
+
+
+
+
     <li class="nav-item"><a class="nav-link icon-animated" href="../model/contact.php"><i class="fas fa-phone-alt"></i> Contact</a></li>
 </ul>
         <!-- Search Bar -->
@@ -274,48 +319,89 @@ $conn->close();
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dropdown functionality for both Categories and Meals
+    const dropdowns = document.querySelectorAll('#categoriesDropdown, #mealDropdown');
+    
+    dropdowns.forEach(dropdown => {
+        const dropdownToggle = dropdown.querySelector('a.nav-link.dropdown-toggle');
+        const dropdownMenu = dropdown.querySelector('.dropdown-menu');
 
-document.getElementById("categoriesDropdown").addEventListener("click", function(event) {
-    // Check if the click is on the dropdown toggle, not on links inside the menu
-    if (event.target === this.querySelector("a.nav-link.dropdown-toggle")) {
-        event.preventDefault(); // Prevent navigation for the toggle only
-        const dropdownMenu = this.querySelector(".dropdown-menu");
-        dropdownMenu.classList.toggle("show"); // Toggle dropdown visibility
-    }
-});
+        // Toggle dropdown on click
+        dropdownToggle.addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent default link behavior
+            
+            // Close other dropdowns first
+            dropdowns.forEach(otherDropdown => {
+                if (otherDropdown !== dropdown) {
+                    const otherMenu = otherDropdown.querySelector('.dropdown-menu');
+                    otherMenu.classList.remove('show');
+                }
+            });
 
-// Close dropdown when clicking outside
-document.addEventListener("click", function(event) {
-    const dropdownMenu = document.querySelector(".dropdown-menu.show");
-    if (dropdownMenu && !event.target.closest("#categoriesDropdown")) {
-        dropdownMenu.classList.remove("show");
-    }
-});
+            // Toggle current dropdown
+            dropdownMenu.classList.toggle('show');
+        });
 
-    //logout button hide if not login , show if login
+        // Prevent dropdown from closing when clicking inside
+        dropdownMenu.addEventListener('click', function(event) {
+            event.stopPropagation(); // Stop event from propagating to document
+        });
+    });
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+        dropdowns.forEach(dropdown => {
+            const dropdownMenu = dropdown.querySelector('.dropdown-menu');
+            if (dropdownMenu.classList.contains('show') && 
+                !dropdown.contains(event.target)) {
+                dropdownMenu.classList.remove('show');
+            }
+        });
+    });
+
+    // Logout button functionality
     <?php if (!isset($_SESSION['user_id'])): ?>
-    $('.logout-icon').hide();
+    const logoutIcon = document.querySelector('.logout-icon');
+    if (logoutIcon) {
+        logoutIcon.style.display = 'none';
+    }
     <?php endif; ?>
 
+    // Logout alert
+    const logoutButton = document.querySelector('.logout-icon');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+            alert('You have been logged out successfully.');
+        });
+    }
 
+    // Search bar functionality
+    const searchInput = document.querySelector('.search-bar input');
+    if (searchInput) {
+        // Animate search bar width
+        searchInput.addEventListener('focus', function() {
+            this.animate([
+                { width: '250px' },
+                { width: '300px' }
+            ], {
+                duration: 500,
+                fill: 'forwards'
+            });
+        });
 
+        searchInput.addEventListener('blur', function() {
+            this.animate([
+                { width: '300px' },
+                { width: '250px' }
+            ], {
+                duration: 500,
+                fill: 'forwards'
+            });
+        });
 
-    //when click logout button show alert
-    $('.logout-icon').click(function () {
-        alert('You have been logged out successfully.');
-    });
- //search bar 
-    $('.search-bar input').focus(function () {
-        $(this).animate({ width: '400px' }, 500);
-    });
-
-    $('.search-bar input').blur(function () {
-        $(this).animate({ width: '300px' }, 500);
-    });
-
-    //seaech with alphabet match alphabet in red color
+        //seaech with alphabet match alphabet in red color
     $('.search-bar input').keyup(function () {
         var searchText = $(this).val().toLowerCase();
         var searchLength = searchText.length;
@@ -343,10 +429,20 @@ document.addEventListener("click", function(event) {
     });
 
 
+        
+        
+
+      
 
 
+       
+
+
+       
+
+        
+    }
+});
 </script>
-
 </body>
 </html>
-

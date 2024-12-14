@@ -2,7 +2,7 @@
 // Start session and check user login status
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /view/login.html");
+    header("Location: /model/login.php");
     exit();
 }
 

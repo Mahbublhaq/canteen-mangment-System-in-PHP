@@ -18,6 +18,69 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) >
 }
 $_SESSION['last_activity'] = time();
 
+// Handle profile picture upload
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) {
+    $user_id = $_SESSION['user_id'];
+    $uploadDir = '../uploads/profiles/';
+    
+    // Ensure upload directory exists
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Check for upload errors
+    if ($_FILES['profile_picture']['error'] !== UPLOAD_ERR_OK) {
+        $_SESSION['error'] = "File upload failed. Error code: " . $_FILES['profile_picture']['error'];
+        header('Location: profile.php');
+        exit();
+    }
+
+    // Validate file type and size
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    $maxFileSize = 5 * 1024 * 1024; // 5MB
+    
+    $fileType = mime_content_type($_FILES['profile_picture']['tmp_name']);
+    $fileSize = $_FILES['profile_picture']['size'];
+
+    if (!in_array($fileType, $allowedTypes)) {
+        $_SESSION['error'] = "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.";
+        header('Location: profile.php');
+        exit();
+    }
+
+    if ($fileSize > $maxFileSize) {
+        $_SESSION['error'] = "File size exceeds 5MB limit.";
+        header('Location: profile.php');
+        exit();
+    }
+
+    // Generate unique filename
+    $fileExtension = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+    $newFilename = $user_id . '_profile_' . uniqid() . '.' . $fileExtension;
+    $uploadPath = $uploadDir . $newFilename;
+
+    // Move uploaded file
+    if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $uploadPath)) {
+        try {
+            // Update profile picture in database
+            $stmt = $conn->prepare("UPDATE customers SET profile_picture = ? WHERE id = ?");
+            $stmt->bind_param("si", $newFilename, $user_id);
+            $stmt->execute();
+
+            $_SESSION['success'] = "Profile picture updated successfully!";
+        } catch (Exception $e) {
+            // If database update fails, remove the uploaded file
+            unlink($uploadPath);
+            $_SESSION['error'] = "Failed to update profile picture in database: " . $e->getMessage();
+        }
+    } else {
+        $_SESSION['error'] = "Failed to move uploaded file.";
+    }
+
+    header('Location: profile.php');
+    exit();
+}
+
 // Fetch customer data with order statistics
 try {
     $user_id = $_SESSION['user_id'];
@@ -89,11 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     header('Location: profile.php');
     exit();
 }
-
-// Handle profile picture upload (existing logic)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) {
-    // ... (keep existing profile picture upload logic)
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,18 +177,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
         .menu-item:hover {
             color: #00ffea; /* Highlight color */
         }
-   
-
     </style>
 </head>
 
 <body class="bg-gray-50">
     <!-- Menu Bar -->
-    <nav class="bg-blue-900 text-white shadow-lg fixed w-full top-0 z-50">
+    <nav class="bg-red-500 text-white shadow-lg fixed w-full top-0 z-50">
         <div class="container mx-auto px-4 flex justify-between items-center py-3">
             <!-- Logo Section -->
             <div class="flex items-center space-x-2">
-                <img src="../static/logo.png" alt="Logo" class="w-10 h-10 rounded-full">
                 <span class="text-lg font-semibold">City University Canteen</span>
             </div>
             <!-- Menu Items -->
@@ -163,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
             </div>
         </div>
     </nav>
-
+          
     <div class="container mx-auto px-4 py-20">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Profile Overview Section -->
@@ -173,14 +228,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                     ? "../uploads/profiles/" . htmlspecialchars($customer['profile_picture'])
                     : "https://via.placeholder.com/150";
                 ?>
-                <div class="relative mx-auto w-40 h-40 mb-4">
-                    <img src="<?= $profile_pic ?>" 
-                         alt="Profile Picture" 
-                         class="w-full h-full rounded-full object-cover border-4 border-blue-100 shadow-md">
-                    <label for="profile_picture_upload" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-blue-600 transition">
-                        <i class="ri-camera-line"></i>
-                    </label>
-                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="relative mx-auto w-40 h-40 mb-4">
+                        <img src="<?= $profile_pic ?>" 
+                             alt="Profile Picture" 
+                             class="w-full h-full rounded-full object-cover border-4 border-blue-100 shadow-md" 
+                             id="profile-preview">
+                        <label for="profile_picture_upload" class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-blue-600 transition">
+                            <i class="ri-camera-line"></i>
+                            <input type="file" 
+                                   id="profile_picture_upload" 
+                                   name="profile_picture" 
+                                   class="hidden" 
+                                   accept="image/jpeg,image/png,image/gif,image/webp"
+                                   onchange="this.form.submit()">
+                        </label>
+                    </div>
+                </form>
                 
                 <h2 class="text-2xl font-bold text-gray-800"><?= htmlspecialchars($customer['customer_name']) ?></h2>
                 <p class="text-gray-600 mb-2"><?= htmlspecialchars($customer['email']) ?></p>
@@ -200,8 +264,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                         <p class="text-lg font-bold text-blue-600">
                             <?php 
                             $total_spent = $customer['total_spent'];
-                            if ($total_spent < 500) echo 'Bronze';
-                            elseif ($total_spent < 1000) echo 'Silver';
+                            if ($total_spent < 2000) echo 'Bronze';
+                            elseif ($total_spent < 3000) echo 'Silver';
                             else echo 'Gold';
                             ?>
                         </p>
@@ -225,19 +289,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                         <?php unset($_SESSION['error']); ?>
                     </div>
                 <?php endif; ?>
-
-                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Edit Profile</h3>
+                <img src="../static/logo.png" alt="Logo" class="w-40 h-45  id="profile-preview" style="margin-left: 40%;">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6 text-red-900">Edit Profile</h3>
 
                 <form method="POST" enctype="multipart/form-data" class="space-y-6">
-                    <input type="file" id="profile_picture_upload" name="profile_picture" class="hidden" accept="image/*">
-                    
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-gray-700 mb-2">Full Name</label>
                             <input type="text" 
                                    name="customer_name" 
                                    value="<?= htmlspecialchars($customer['customer_name']) ?>" 
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
                         </div>
                         <div>
                             <label class="block text-gray-700 mb-2">Email Address</label>
@@ -246,9 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed" 
                                    readonly>
                         </div>
-                   
                     </div>
-              
 
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
@@ -256,8 +316,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                             <input type="tel" 
                                    name="delivery_mobile" 
                                    value="<?= htmlspecialchars($customer['delivery_mobile'] ?? '') ?>" 
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                   pattern="01[0-9]{9}" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                                   pattern="01[0-9]{9}"
                                    title="Please enter a 11-digit phone number">
                         </div>
                         <div>
@@ -265,7 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                             <input type="text" 
                                    name="address" 
                                    value="<?= htmlspecialchars($customer['address']) ?>" 
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
                         </div>
                     </div>
 
@@ -274,7 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                         <input type="text" 
                                name="delivery_address" 
                                value="<?= htmlspecialchars($customer['delivery_address']) ?>" 
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500">
                     </div>
 
                     <div>
@@ -282,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                         <textarea 
                             name="delivery_notice" 
                             rows="3" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
                         ><?= htmlspecialchars($customer['delivery_notice']) ?></textarea>
                     </div>
 
@@ -290,7 +350,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
                         <a href="../view/forget.html" class="text-blue-600 hover:underline">Change Password</a>
                         <button type="submit" 
                                 name="update_profile" 
-                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
                             Update Profile
                         </button>
                     </div>
