@@ -55,7 +55,7 @@ $conn->close();
         /* Navbar Styles */
         .navbar {
             background-color:#DC143C;
-            padding: 10px 10px;
+            padding: 5px 10px;
             position: sticky;
             top: 0;
             width: 100%;

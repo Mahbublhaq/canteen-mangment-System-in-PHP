@@ -4,7 +4,7 @@ include '../db/db.php';
  
 // Authentication and session checks
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../view/login.html');
+    header('Location: ../model/login.php');
     exit();
 }
 
@@ -90,7 +90,7 @@ try {
         SELECT 
             c.*,
             COUNT(o.id) as total_orders,
-            COALESCE(SUM(o.total_cost), 0) as total_spent
+            COALESCE(SUM(o.net_total), 0) as total_spent
         FROM 
             customers c
         LEFT JOIN 
@@ -108,12 +108,12 @@ try {
     if (!$customer) {
         session_unset();
         session_destroy();
-        header('Location: ../view/login.html');
+        header('Location: ../model/login.php');
         exit();
     }
 } catch (Exception $e) {
     error_log("Profile fetch error: " . $e->getMessage());
-    header('Location: ../view/login.html?error=1');
+    header('Location: ../model/login.php?error=1');
     exit();
 }
 
@@ -121,6 +121,7 @@ try {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $editableFields = [
         'customer_name', 
+        'phone',
         'address', 
         'delivery_address', 
         'delivery_notice', 
@@ -312,6 +313,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
+                         
+                            <label class="block text-gray-700 mb-2">Mobile Number</label>
+                            <input type="tel" 
+                                   name="phone" 
+                                   value="<?= htmlspecialchars($customer['phone']?? '') ?>" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                                   pattern="01[0-9]{9}"
+                                   title="Please enter a 11-digit phone number">
+                        </div>
+                        <div>
+
+
                             <label class="block text-gray-700 mb-2">Delivery Mobile Number</label>
                             <input type="tel" 
                                    name="delivery_mobile" 

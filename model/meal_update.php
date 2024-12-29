@@ -2,7 +2,7 @@
 // Include database connection and PHPMailer
 require_once '../db/db.php';
 require '../vendor/autoload.php';
-
+include'../menu/adminmenu.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -167,20 +167,21 @@ if (!$result) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f4f6f9;
+            background-color:rgb(237, 230, 230);
             font-family: 'Arial', sans-serif;
         }
         .container-fluid {
-            max-width: 1400px;
+            max-width: 100%;
         }
         .card {
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            
             margin-bottom: 20px;
         }
         .table-responsive {
             border-radius: 15px;
             overflow: hidden;
+            
         }
         .table {
             margin-bottom: 0;
@@ -198,7 +199,7 @@ if (!$result) {
             transition: background-color 0.3s ease;
         }
         .table tbody tr:hover {
-            background-color: rgba(74, 144, 226, 0.1);
+            background-color: white;
         }
         .status-active {
             color: #28a745;
@@ -237,9 +238,19 @@ if (!$result) {
                 font-size: 0.875rem;
             }
         }
+       
+        .card{
+            margin-left:22%;
+            margin-right:5%;
+        }
+        h1{
+            margin-top:2%;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
+   
     <div class="container-fluid py-4">
         <!-- Message Container -->
         <?php if (!empty($message)): ?>

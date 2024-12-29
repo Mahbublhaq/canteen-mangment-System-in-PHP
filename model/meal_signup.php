@@ -152,42 +152,71 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </div> -->
 <?php include '../menu/menu.php'   ?>
-    <div class="registration-container">
-        <div class="registration-form">
-            <h2>Meal Registration</h2>
-            <?php if (isset($message)) echo $message; ?>
-            <form action="" method="POST">
-                <label for="name">Full Name:</label>
-                <input type="text" name="name" required>
+<div class="registration-container">
+    <div class="registration-form">
+        <h2>Meal Registration</h2>
+        <?php if (isset($message)) echo $message; ?>
+        <form action="" method="POST">
+            <label for="name">Full Name:</label>
+            <input type="text" name="name" value="<?php echo htmlspecialchars($_SESSION['name']); ?>" readonly required>
 
-                <label for="department">Department:</label>
-                <select name="department" required>
-                    <option value="Computer Science">Computer Science & Engineering</option>
-                    <option value="Business Administration">Business Administration</option>
-                    <option value="Electrical Engineering">Electrical & Electronic Engineering</option>
-                    <option value="Civil Engineering">Civil Engineering</option>
-                    <option value="Pharmacy">Pharmacy</option>
-                    <option value="English">English</option>
-                    <option value="Law">Law</option>
-                    <option value="Others">Others</option>
-                </select>
+            <label for="department">Department:</label>
+            <select name="department" required>
+                <option value="Computer Science">Computer Science & Engineering</option>
+                <option value="Business Administration">Business Administration</option>
+                <option value="Electrical Engineering">Electrical & Electronic Engineering</option>
+                <option value="Civil Engineering">Civil Engineering</option>
+                <option value="Pharmacy">Pharmacy</option>
+                <option value="English">English</option>
+                <option value="Law">Law</option>
+                <option value="Others">Others</option>
+            </select>
 
-                <label for="deposit">Initial Deposit:</label>
-                <input type="number" step="0.01" name="deposit" placeholder="Minimum ADD 2000 TK" required>
+            <label for="deposit">Initial Deposit:</label>
+            <input type="number" step="0.01" name="deposit" placeholder="Minimum ADD 2000 TK" required>
 
-                <label for="varsity_id">Varsity ID:</label>
-                <input type="text" name="varsity_id" required>
+            <label for="varsity_id">Varsity ID:</label>
+            <input type="text" name="varsity_id" required>
 
-                <label for="email">Email:</label>
-                <input type="email" name="email" required>
+            <label for="email">Email:</label>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($_SESSION['email']); ?>" readonly required>
 
-                <label for="meal_date">Meal Date:</label>
-                <input type="date" name="meal_date" required>
+            <label for="meal_date">Meal Date:</label>
+            <input type="date" name="meal_date" required>
 
-                <button type="submit" class="bt">Register Meal</button>
-
-            </form>
-        </div>
+            <button type="submit" class="bt">Register Meal</button>
+        </form>
     </div>
+</div>
+    <script>
+document.querySelector('form').addEventListener('submit', function(event) {
+    const email = document.querySelector('input[name="email"]').value;
+    const deposit = parseFloat(document.querySelector('input[name="deposit"]').value);
+
+    const emailPattern = /^[a-zA-Z0-9._%+-]{5,}@(gmail\.com|outlook\.com|yahoo\.com)$/;
+
+    if (!emailPattern.test(email)) {
+        event.preventDefault();
+        alert('Invalid email! Must be at least 5 characters and end with @gmail.com, @outlook.com, or @yahoo.com.');
+        return;
+    }
+
+  
+
+});
+
+document.querySelector('form').addEventListener('submit', function(event) {
+    const depositField = document.querySelector('input[name="deposit"]');
+    const deposit = parseFloat(depositField.value);
+
+    if (isNaN(deposit) || deposit < 2000) {
+        event.preventDefault(); // Prevent form submission
+        alert('Invalid deposit! Minimum deposit is 2000 TK.');
+        depositField.focus(); // Set focus back to the deposit field
+    }
+});
+
+</script>
+
 </body>
 </html>

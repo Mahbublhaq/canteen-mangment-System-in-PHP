@@ -46,7 +46,7 @@ $totalDeposit = $totalDepositData['total_deposit'] ?? 0;
 
 // Fetch recent order history
 $orderQuery = "
-    SELECT id, created_at, order_details, total_cost
+    SELECT id, created_at, order_details,net_total
     FROM orders
     WHERE customer_id = '$customer_id'
     ORDER BY created_at DESC
@@ -250,7 +250,7 @@ $profile_pic = !empty($customerData['profile_picture'])
 </td>
 
 
-                                        <td class="p-3 text-right"><?php echo number_format($order['total_cost'], 2); ?> TK</td>
+                                        <td class="p-3 text-right"><?php echo number_format($order['net_total'], 2); ?> TK</td>
                                     </tr>
                                 <?php endwhile; ?>
                             </tbody>

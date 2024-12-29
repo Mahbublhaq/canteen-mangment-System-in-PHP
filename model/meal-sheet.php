@@ -1,7 +1,7 @@
 <?php
-session_start();
-include '../db/db.php'; // Include database connection
 
+include '../db/db.php'; // Include database connection
+include'../menu/adminmenu.php';
 // Include Composer autoloader (if using Composer)
 require '../vendor/autoload.php'; // Adjust the path based on your project structure
 
@@ -58,7 +58,11 @@ if (isset($_POST['send_email'])) {
         // Content
         $mail->isHTML(true);
         $mail->Subject = 'Low Balance Notification';
-        $mail->Body = 'Your balance is low. Please recharge your account.';
+        $mail->Body = 'Your balance is low. Please recharge your account.
+        <p> City University Canteen</p>
+        <p>Mobile:01710000000</p>
+        <p>Email:citycanteen@cityuniversity.ac.bd</p>';
+
 
         $mail->send();
         echo '<script>alert("Email sent successfully!");</script>';
@@ -78,84 +82,121 @@ if (isset($_POST['send_email'])) {
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            background-color:rgb(255, 253, 253);
+            font-size: 16px;
         }
         .container {
-            margin-top: 30px;
+            margin-top: 10px;
+            max-width: 80%;
+            width: 80%;
+            overflow-x: auto;
+            margin-left:20%;
+            font-size: 14px;
         }
         .table {
-            margin-top: 20px;
+            margin-top: 10px;
+        }
+        .table th, .table td {
+            padding: 4px 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
         }
         .no-results {
             color: red;
+            font-size: 12px;
         }
         .low-balance {
             color: red;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        #search-box {
+            font-size: 16px;
+            margin-left:70%
+        
+        }
+        .btn {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        h2{
+            color:crimson;
+           font-weight: 600;
+        }
+        h1{
+            margin-top:10px;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 class="text-center">Meal Sheet</h2>
+    <h2 class="text-center" style="font-size: 30px;">Meal Sheet</h2>
     
     <!-- Search Form -->
-    <div class="input-group mb-4">
+    <div class="input-group">
         <input type="text" class="form-control" id="search-box" placeholder="Search by Customer ID or Name" onkeyup="searchTable()">
         <button class="btn btn-primary" type="button" id="search-btn">Search</button>
     </div>
     <div id="no-results-message" class="no-results" style="display: none;">No results found</div>
     
     <!-- Display Meal Sheet -->
-    <table class="table table-striped" id="meal-table">
-        <thead>
-            <tr>
-                <th>Customer ID</th>
-                <th>Customer Name</th>
-                <th>Phone</th>
-                <th>Email</th>
-                <th>Lunch Meal</th>
-                <th>Dinner Meal</th>
-                <th>Remaining Balance</th>
-                <th>Lunch Quantity</th>
-                <th>Dinner Quantity</th>
-                <th>Meal Date Time</th>
-                <th>Total Deposit</th>
-                <th>Deposit Dates</th>
-                <th>Deposit Amounts</th>
-            
-                <th>Email Sent</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($row = mysqli_fetch_assoc($result)): ?>
-                <tr class="<?= $row['remain_balance'] < 200 ? 'low-balance' : '' ?>">
-                    <td><?= htmlspecialchars($row['customer_id']) ?></td>
-                    <td><?= htmlspecialchars($row['customer_name']) ?></td>
-                    <td><?= htmlspecialchars($row['phone']) ?></td>
-                    <td><?= htmlspecialchars($row['email']) ?></td>
-                    <td><?= $row['lunch_meal'] ? 'Yes' : 'No' ?></td>
-                    <td><?= $row['dinner_meal'] ? 'Yes' : 'No' ?></td>
-                    <td><?= number_format($row['remain_balance'], 2) ?></td>
-                    <td><?= $row['lunch_quantity'] > 1 ? $row['lunch_quantity'] : '-' ?></td>
-                    <td><?= $row['dinner_quantity'] > 1 ? $row['dinner_quantity'] : '-' ?></td>
-                    <td><?= $row['meal_date_time'] ?></td>
-                    <td><?= number_format($row['total_deposit'], 2) ?></td>
-                    <td><?= $row['deposit_dates'] ?></td>
-                    <td><?= $row['deposit_amounts'] ?></td>
+    <div style="max-height: 500px; overflow-y: auto;">
+        <table class="table table-striped table-sm" id="meal-table">
+            <thead>
+                <tr>
+                    <th>C_ID</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Lunch</th>
+                    <th>Dinner</th>
+                    <th>Balance</th>
+                    <th>Action</th>
+                    <th>L Qty</th>
+                    <th>D Qty</th>
+                    <th>Meal Date</th>
+                    <th>Deposit</th>
+                    <th>D_Dates</th>
+                   
                     
-                    <td>
-                        <?php if ($row['remain_balance'] < 200): ?>
-                            <form method="post" action="meal-sheet.php">
-                                <input type="hidden" name="email" value="<?= htmlspecialchars($row['email']) ?>">
-                                <button type="submit" name="send_email" class="btn btn-warning">Send Email</button>
-                            </form>
-                        <?php endif; ?>
-                    </td>
                 </tr>
-            <?php endwhile; ?>
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                    <tr class="<?= $row['remain_balance'] < 200 ? 'low-balance' : '' ?>">
+                        <td><?= htmlspecialchars($row['customer_id']) ?></td>
+                        <td><?= htmlspecialchars($row['customer_name']) ?></td>
+                        <td><?= htmlspecialchars($row['phone']) ?></td>
+                        <td><?= htmlspecialchars($row['email']) ?></td>
+                        <td><?= $row['lunch_meal'] ? 'Yes' : 'No' ?></td>
+                        <td><?= $row['dinner_meal'] ? 'Yes' : 'No' ?></td>
+                        <td><?= number_format($row['remain_balance'], 2) ?></td>
+                        <td>
+                            <?php if ($row['remain_balance'] < 200): ?>
+                                <form method="post" action="meal-sheet.php">
+                                    <input type="hidden" name="email" value="<?= htmlspecialchars($row['email']) ?>">
+                                    <button type="submit" name="send_email" class="btn btn-warning btn-sm">Send</button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= $row['lunch_quantity'] > 1 ? $row['lunch_quantity'] : '-' ?></td>
+                        <td><?= $row['dinner_quantity'] > 1 ? $row['dinner_quantity'] : '-' ?></td>
+                        <td><?= $row['meal_date_time'] ?></td>
+                        <td><?= number_format($row['total_deposit'], 2) ?></td>
+                        <td><?= $row['deposit_dates'] ?></td>
+                        
+                        
+                       
+                    </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
@@ -186,19 +227,15 @@ if (isset($_POST['send_email'])) {
 
         // Show "No results" message if no rows match the search
         noResultsMessage.style.display = found ? 'none' : 'block';
+    }
 
-
-        //email sending success message
-        function sendEmail() {
-            alert("Email sent successfully!");
-        }
-        //if any error occurs show heare
-        function sendEmailError() {
-            alert("Message could not be sent. Mailer Error: ");
-        }
-
-
-
+    //email sending success message
+    function sendEmail() {
+        alert("Email sent successfully!");
+    }
+    //if any error occurs show here
+    function sendEmailError() {
+        alert("Message could not be sent. Mailer Error: ");
     }
 </script>
 

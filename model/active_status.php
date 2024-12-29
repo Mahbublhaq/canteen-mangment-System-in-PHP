@@ -4,7 +4,7 @@
 
 // Include the database connection
 require '../db/db.php';
-
+include'../menu/adminmenu.php';
 
 // Handle the update of active status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
@@ -32,23 +32,38 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="style.css"> <!-- Include your CSS file -->
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background-color:rgb(248, 248, 248);
             margin: 0;
             padding: 20px;
+            color:black;
+        }
+        .nav-menu a.active {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
         }
 
-        h1 {
+        h3 {
             text-align: center;
-            color: #333;
+            font-weight: 600;
+            margin-left:20%;
+            
+        }
+        h1{
+            text-align:center;
+            margin-top:2%;
+            margin-left:20%;
+            color:black;
+            font-weight: 600;
         }
 
         table {
-            width: 100%;
+            width:70%;
             border-collapse: collapse;
             margin: 20px 0;
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
             perspective: 1000px;
+            margin-left:25%;
         }
 
         th, td {
@@ -59,7 +74,7 @@ $result = $conn->query($sql);
         }
 
         th {
-            background-color: #007bff;
+            background-color:rgb(36, 126, 230);
             color: white;
         }
 
@@ -97,13 +112,11 @@ $result = $conn->query($sql);
             font-weight: bold;
         }
 
-        a:hover {
-            text-decoration: underline;
-        }
+       
     </style>
 </head>
 <body>
-    <h1>Manage Products</h1>
+    <h3 style="color:crimson;font-weight:600;">Manage Products</h3>
 
     <table>
         <thead>
@@ -152,7 +165,7 @@ $result = $conn->query($sql);
         </tbody>
     </table>
 
-    <a href="admin_dashboard.php">Back to Dashboard</a>
+    <a href="admin.php">Back to Dashboard</a>
 
     <?php
     // Close the database connection

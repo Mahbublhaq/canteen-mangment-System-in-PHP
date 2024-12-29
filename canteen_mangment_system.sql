@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 09, 2024 at 09:24 AM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Generation Time: Dec 19, 2024 at 04:30 PM
+-- Server version: 10.4.28-MariaDB
+-- PHP Version: 8.0.28
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,6 +24,48 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admins`
+--
+
+CREATE TABLE `admins` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `profile_picture` varchar(255) NOT NULL,
+  `role` varchar(50) NOT NULL CHECK (`role` = 'admin'),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admins`
+--
+
+INSERT INTO `admins` (`id`, `name`, `email`, `password`, `phone`, `profile_picture`, `role`, `created_at`) VALUES
+(1, 'Mahabub', 'admin@gmail.com', '$2y$10$Sw5q.tN6ari2Qu4aCp9AROXjrxmieS2DKfr6RACA4ZifoDQftyzKy', '01601337085', 'uploads/1734372046_111111111111111111.png', 'admin', '2024-11-18 13:52:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `contact_queries`
+--
+
+CREATE TABLE `contact_queries` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `problem` enum('Deposit Problem','Food Problem','Delivery Problem','Packing Problem','Other') NOT NULL,
+  `details` text DEFAULT NULL,
+  `query` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` varchar(255) NOT NULL DEFAULT 'Pending',
+  `reply_message` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `customers`
 --
 
@@ -34,17 +76,13 @@ CREATE TABLE `customers` (
   `password` varchar(255) NOT NULL,
   `phone` varchar(15) DEFAULT NULL,
   `address` varchar(255) DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `profile_picture` varchar(255) DEFAULT NULL,
+  `delivery_address` varchar(255) DEFAULT NULL,
+  `delivery_notice` text DEFAULT NULL,
+  `delivery_mobile` varchar(20) DEFAULT NULL,
+  `signup_method` enum('regular','google') DEFAULT 'regular'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `customers`
---
-
-INSERT INTO `customers` (`id`, `customer_name`, `email`, `password`, `phone`, `address`, `created_at`) VALUES
-(1, 'Mahbubul Huq', 'mahbubulhaq.cu.05@gmail.com', '$2y$10$0bGpIgvSKHHyanaCxyNK3OHAqKxKmrrrYJcLeSav6oB12RLwOGe7O', '01601337085', 'Mirpur 14', '2024-11-01 06:29:01'),
-(2, 'Alim', 'abdulalimcse14@gmail.com', '$2y$10$A4DaZqDU5bOCfLELGG9HDOdu6.DNbe6Rb..OBIyki.DTBvrLCQ7mS', '01718337085', 'Khagan, Asulia', '2024-11-07 16:27:54'),
-(7, 'Mr X', 'mahabubpanti@gmail.com', '$2y$10$pNeIuoztLydQ/R2Q9hsy8eihS1aU.nrMw5SoED8YlKtiZWdpYn2Om', '01601337085', 'Khagan, Asulia', '2024-11-08 06:39:51');
 
 -- --------------------------------------------------------
 
@@ -55,17 +93,11 @@ INSERT INTO `customers` (`id`, `customer_name`, `email`, `password`, `phone`, `a
 CREATE TABLE `deposit_history` (
   `id` int(11) NOT NULL,
   `customer_id` int(11) NOT NULL,
+  `payment_method` enum('Bkash','Nagad','Card') NOT NULL,
+  `payment_details` varchar(255) DEFAULT 'First Deposit ',
   `deposit_amount` decimal(10,2) NOT NULL,
   `transaction_date` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `deposit_history`
---
-
-INSERT INTO `deposit_history` (`id`, `customer_id`, `deposit_amount`, `transaction_date`) VALUES
-(1, 1, 500.00, '2024-11-09 08:08:14'),
-(2, 1, 20.00, '2024-11-09 08:10:16');
 
 -- --------------------------------------------------------
 
@@ -78,26 +110,16 @@ CREATE TABLE `meal` (
   `meal_id` int(11) NOT NULL,
   `lunch_meal` tinyint(1) DEFAULT 0,
   `dinner_meal` tinyint(1) DEFAULT 0,
-  `deposit` decimal(10,2) DEFAULT NULL,
+  `deposit` decimal(10,2) DEFAULT 0.00,
   `meal_price` decimal(10,2) DEFAULT NULL,
-  `remain_balance` decimal(10,2) DEFAULT NULL,
+  `remain_balance` decimal(10,2) DEFAULT 0.00,
   `active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `lunch_quantity` int(11) DEFAULT 0,
-  `dinner_quantity` int(11) DEFAULT 0
+  `lunch_quantity` int(10) DEFAULT NULL,
+  `dinner_quantity` int(10) DEFAULT NULL,
+  `total_deposits` decimal(10,2) DEFAULT 0.00,
+  `status` enum('active','inactive') DEFAULT 'active'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `meal`
---
-
-INSERT INTO `meal` (`id`, `meal_id`, `lunch_meal`, `dinner_meal`, `deposit`, `meal_price`, `remain_balance`, `active`, `created_at`, `lunch_quantity`, `dinner_quantity`) VALUES
-(1, 1, 0, 0, 1900.00, NULL, 1900.00, 1, '2024-11-09 07:59:20', 0, 0),
-(2, 1, 0, 0, 2000.00, NULL, 2000.00, 1, '2024-11-09 07:59:39', 0, 0),
-(3, 1, 0, 0, 2500.00, NULL, 2500.00, 1, '2024-11-09 08:08:14', 0, 0),
-(4, 1, 1, 0, NULL, 120.00, 2080.00, 1, '2024-11-09 08:09:17', 2, 0),
-(5, 1, 0, 1, NULL, 300.00, 2080.00, 1, '2024-11-09 08:09:17', 0, 5),
-(6, 1, 0, 0, 2100.00, NULL, 2100.00, 1, '2024-11-09 08:10:16', 0, 0);
 
 -- --------------------------------------------------------
 
@@ -113,16 +135,25 @@ CREATE TABLE `meal_registration` (
   `deposit` decimal(10,2) DEFAULT 100.00,
   `varsity_id` varchar(50) DEFAULT NULL,
   `email` varchar(100) NOT NULL,
+  `active` tinyint(2) NOT NULL DEFAULT 0,
   `meal_date` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
+
 --
--- Dumping data for table `meal_registration`
+-- Table structure for table `offers`
 --
 
-INSERT INTO `meal_registration` (`id`, `customer_id`, `name`, `department`, `deposit`, `varsity_id`, `email`, `meal_date`) VALUES
-(1, 1, 'Mahbubul Huq', 'Computer Science', 2100.00, '1925102005', 'mahbubulhaq.cu.05@gmail.com', '2024-11-05'),
-(3, 7, 'Mr X', 'Computer Science', 2000.00, '1925102002', 'mahabubpanti@gmail.com', '2024-11-09');
+CREATE TABLE `offers` (
+  `id` int(11) NOT NULL,
+  `offer_name` varchar(255) NOT NULL,
+  `discount_code` varchar(50) NOT NULL,
+  `discount_amount` int(11) NOT NULL,
+  `expiry_date` date NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -133,9 +164,17 @@ INSERT INTO `meal_registration` (`id`, `customer_id`, `name`, `department`, `dep
 CREATE TABLE `orders` (
   `id` int(11) NOT NULL,
   `customer_id` int(11) NOT NULL,
-  `order_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`order_details`)),
+  `order_details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `total_cost` decimal(10,2) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `subtotal` decimal(10,2) NOT NULL,
+  `discount_amount` decimal(10,2) NOT NULL,
+  `net_total` decimal(10,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `payment_method` enum('Cash on Delivery','Online') NOT NULL,
+  `discount_code` varchar(20) DEFAULT NULL,
+  `order_status` varchar(255) NOT NULL DEFAULT 'Pending',
+  `admin_name` varchar(255) NOT NULL,
+  `admin_id` int(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -162,13 +201,31 @@ INSERT INTO `products` (`id`, `catagorey`, `product_name`, `product_details`, `p
 (5, 'Combo', 'Combo 1', 'Fride Rice + Cegitable + Cary+ Drinks', 250.00, '../uploads/Combo1.jpeg', 1),
 (6, 'Combo', 'Combo 2', 'Fride Rice + Vegitable +Chicken Fry+ Drinks', 300.00, '../uploads/Combo2.jpg', 1),
 (7, 'Combo', 'Student Combo', 'Fride Rice + Vegitable +Chicken Cary+ Drinks', 200.00, '../uploads/student_combo.jpeg', 1),
-(8, 'Meal', 'Lunch Meal', 'Rice+Chicken+Vegitable+Dal', 60.00, '../uploads/meal2.png', 1),
+(8, 'Meal', 'Lunch Meal 1', 'Rice+Chicken+Vegitable+Dal', 60.00, '../uploads/meal2.png', 1),
 (9, 'Meal', 'Lunch Meal', 'Rice+Vegitable+Dim+Dal', 60.00, '../uploads/Meal3.jpg', 1),
-(10, 'Meal', 'Dinner Meal', 'Rice+Vegitable +Finsh Cary+Dal', 60.00, '../uploads/Meal3.jpg', 1);
+(10, 'Meal', 'Dinner Meal', 'Rice+Vegitable +Finsh Cary+Dal', 60.00, '../uploads/Meal3.jpg', 1),
+(11, 'Hot Offer', 'Kacchi Biryani', 'Mutton Kacchi Biryani', 200.00, '../uploads/kassi1.jpg', 1),
+(12, 'Hot Offer', 'Chicken Biryani', 'Chicken Biryani Half Plate', 100.00, '../uploads/chickenBirany.jpeg', 1),
+(13, 'Hot Offer', 'Ilish Mas', 'illish fish fry + Rice +Dal', 150.00, '../uploads/fishfry.jpeg', 1),
+(14, 'Hot Offer', 'Ilish Mas', 'Sorisa illish + Rice +Dal', 200.00, '../uploads/ilish.jpeg', 1),
+(15, 'Hot Offer', ' Vorta ', '10 Pod er Vorta+Vat+Dal', 100.00, '../uploads/vorta.jpeg', 1);
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `admins`
+--
+ALTER TABLE `admins`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `contact_queries`
+--
+ALTER TABLE `contact_queries`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `customers`
@@ -188,7 +245,8 @@ ALTER TABLE `deposit_history`
 -- Indexes for table `meal`
 --
 ALTER TABLE `meal`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `meal_id` (`meal_id`);
 
 --
 -- Indexes for table `meal_registration`
@@ -200,11 +258,16 @@ ALTER TABLE `meal_registration`
   ADD KEY `customer_id` (`customer_id`);
 
 --
+-- Indexes for table `offers`
+--
+ALTER TABLE `offers`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `orders`
 --
 ALTER TABLE `orders`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `customer_id` (`customer_id`);
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `products`
@@ -217,40 +280,58 @@ ALTER TABLE `products`
 --
 
 --
+-- AUTO_INCREMENT for table `admins`
+--
+ALTER TABLE `admins`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `contact_queries`
+--
+ALTER TABLE `contact_queries`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=36;
 
 --
 -- AUTO_INCREMENT for table `deposit_history`
 --
 ALTER TABLE `deposit_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `meal`
 --
 ALTER TABLE `meal`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `meal_registration`
 --
 ALTER TABLE `meal_registration`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
+
+--
+-- AUTO_INCREMENT for table `offers`
+--
+ALTER TABLE `offers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables
@@ -263,16 +344,17 @@ ALTER TABLE `deposit_history`
   ADD CONSTRAINT `deposit_history_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `meal_registration` (`customer_id`) ON DELETE CASCADE;
 
 --
+-- Constraints for table `meal`
+--
+ALTER TABLE `meal`
+  ADD CONSTRAINT `meal_ibfk_1` FOREIGN KEY (`meal_id`) REFERENCES `meal_registration` (`customer_id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `meal_registration`
 --
 ALTER TABLE `meal_registration`
+  ADD CONSTRAINT `fk_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
   ADD CONSTRAINT `meal_registration_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `orders`
---
-ALTER TABLE `orders`
-  ADD CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

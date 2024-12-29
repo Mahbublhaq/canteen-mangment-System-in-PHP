@@ -1,6 +1,7 @@
 <?php
 include '../db/db.php';
 //menu bar
+include '../menu/adminmenu.php';
 
 
 // Initialize variables for messages
@@ -54,7 +55,7 @@ $conn->close();
             @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background-color: #f8f9fa;
         }
 
@@ -148,6 +149,15 @@ $conn->close();
             margin-bottom: 1rem;
             animation: fadeInUp 0.5s ease forwards;
         }
+        h1{
+            text-align: center;
+            margin-top: 2%;
+            font-weight: 600;
+            margin-left: 15%;
+        }
+        .container{
+            margin-left: 15%;
+        }
     </style>
 </head>
 <body>
@@ -181,7 +191,7 @@ $conn->close();
         <?php endif; ?>
     </div>
 
-    <div class="container py-5">
+    <div class="container py-3">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card animate-fade-in">
