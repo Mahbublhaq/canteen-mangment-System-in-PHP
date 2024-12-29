@@ -1,8 +1,3 @@
-
-
-
-
-
 <?php
 include '../db/db.php'; // Database connection file
 include'../menu/adminmenu.php';
@@ -103,52 +98,51 @@ function getTopCustomers($conn) {
 
 // Fixed function to get top 5 selling products
 function getTopProducts($conn) {
-    // First, check if JSON_TABLE is supported
+    // Check if the server supports JSON_TABLE
     $check_json_support = mysqli_query($conn, "SELECT JSON_EXTRACT('[1]', '$[0]')");
     
     if ($check_json_support) {
         // Use JSON functions if supported
-        $query = "SELECT 
-                    product_name,
-                    SUM(quantity) as total_quantity_sold
-                FROM (
-                    SELECT 
-                        JSON_UNQUOTE(JSON_EXTRACT(items.item, '$.product_name')) as product_name,
-                        CAST(JSON_UNQUOTE(JSON_EXTRACT(items.item, '$.quantity')) AS UNSIGNED) as quantity
-                    FROM orders,
-                        JSON_TABLE(
-                            order_details,
-                            '$[*]' COLUMNS (
-                                item JSON PATH '$'
-                            )
-                        ) items
-                ) product_sales
-                GROUP BY product_name
-                ORDER BY total_quantity_sold DESC
-                LIMIT 5";
+        $query = "
+            SELECT 
+                JSON_UNQUOTE(JSON_EXTRACT(item, '$.product_name')) AS product_name,
+                SUM(CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.quantity')) AS UNSIGNED)) AS total_quantity_sold
+            FROM orders, JSON_TABLE(
+                order_details,
+                '$[*]' COLUMNS (
+                    item JSON PATH '$'
+                )
+            ) AS items
+            GROUP BY product_name
+            ORDER BY total_quantity_sold DESC
+            LIMIT 5;
+        ";
     } else {
-        // Fallback query if JSON functions are not supported
-        $query = "SELECT 
-                    product_name,
-                    COUNT(*) as total_quantity_sold
-                FROM orders
-                GROUP BY product_name
-                ORDER BY total_quantity_sold DESC
-                LIMIT 5";
+        // Fallback for servers without JSON_TABLE support
+        $query = "
+            SELECT 
+                product_name,
+                COUNT(*) AS total_quantity_sold
+            FROM orders
+            GROUP BY product_name
+            ORDER BY total_quantity_sold DESC
+            LIMIT 5;
+        ";
     }
     
-    $result = mysqli_query($conn, $query);
-    if (!$result) {
-        error_log("MySQL Error in getTopProducts: " . mysqli_error($conn));
-        return [];
-    }
+    // $result = mysqli_query($conn, $query);
+    // if (!$result) {
+    //     error_log("Error in getTopProducts: " . mysqli_error($conn));
+    //     return [];
+    // }
     
-    $top_products = [];
-    while ($row = mysqli_fetch_assoc($result)) {
-        $top_products[] = $row;
-    }
-    return $top_products;
+    // $top_products = [];
+    // while ($row = mysqli_fetch_assoc($result)) {
+    //     $top_products[] = $row;
+    // }
+    // return $top_products;
 }
+
 
 // Function to get recent orders
 function getRecentOrders($conn, $limit = 10) {
@@ -196,7 +190,7 @@ $pending_orders = getPendingOrders($conn);
 $daily_sales = getDailySales($conn);
 $monthly_sales_graph = getMonthlySalesGraph($conn);
 $top_customers = getTopCustomers($conn);
-$top_products = getTopProducts($conn);
+//$top_products = getTopProducts($conn);
 $recent_orders = getRecentOrders($conn);
 
 ?>
@@ -280,16 +274,16 @@ $recent_orders = getRecentOrders($conn);
                     <div class="table-responsive custom-table">
                         <table class="table">
                             <thead>
-                                <tr>
-                                    <th>Customer ID</th>
-                                    <th>Orders</th>
-                                    <th>Total Spent</th>
+                                <tr >
+                                    <th style="color: white;">Customer ID</th>
+                                    <th style="color: white;">Orders</th>
+                                    <th style="color: red;">Total Spent</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach($top_customers as $customer): ?>
                                 <tr>
-                                    <td><span class="customer-id"><?php echo $customer['customer_id']; ?></span></td>
+                                    <td style="color:parpel"><span class="customer-id"><?php echo $customer['customer_id']; ?></span></td>
                                     <td><?php echo $customer['order_count']; ?></td>
                                     <td>BD<?php echo number_format($customer['total_spent'], 2); ?></td>
                                 </tr>
@@ -299,7 +293,7 @@ $recent_orders = getRecentOrders($conn);
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <!-- <div class="col-md-6">
                 <div class="dashboard-card glass-effect">
                     <h2><i class="fas fa-crown"></i> Top 5 Selling Products</h2>
                     <div class="table-responsive custom-table">
@@ -321,7 +315,7 @@ $recent_orders = getRecentOrders($conn);
                         </table>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
         <!-- Recent Orders Table -->
@@ -329,15 +323,15 @@ $recent_orders = getRecentOrders($conn);
             <h2><i class="fas fa-history"></i> Recent Orders</h2>
             <div class="table-responsive custom-table">
                 <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Customer</th>
-                            <th>Total</th>
-                            <th>Net Total</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Payment</th>
+                    <thead >
+                        <tr >
+                            <th style="color: white;">Order ID</th>
+                            <th style="color: white;">Customer</th>
+                            <th style="color: white;">Total</th>
+                            <th style="color: white;">Net Total</th>
+                            <th style="color: white;">Status</th>
+                            <th style="color: white;">Date</th>
+                            <th style="color: white;">Payment</th>
                         </tr>
                     </thead>
                     <tbody>

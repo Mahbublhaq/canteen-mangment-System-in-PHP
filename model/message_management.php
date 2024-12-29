@@ -240,68 +240,92 @@ $result = mysqli_query($conn, $query);
     </div>
 
     <script>
-        function showMessage(id) {
-            fetch(`get_message.php?id=${id}`)
-                .then(response => response.json())
-                .then(data => {
-                    const detailHtml = `
-                        <h3>Message Details</h3>
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">${data.name}</h5>
-                                <h6 class="card-subtitle mb-2 text-muted">${data.email}</h6>
-                                <p class="card-text"><strong>Problem:</strong> ${data.problem}</p>
-                                <p class="card-text"><strong>Details:</strong> ${data.details}</p>
-                                <p class="card-text"><strong>Query:</strong> ${data.query}</p>
-                                <p class="card-text"><small class="text-muted">Created: ${data.created_at}</small></p>
-                                
-                                ${data.status !== 'confirmed' ? `
-                                    <form method="POST" action="">
-                                        <input type="hidden" name="message_id" value="${data.id}">
-                                        <input type="hidden" name="email" value="${data.email}">
-                                        <input type="hidden" name="name" value="${data.name}">
-                                        
-                                        <div class="reply-box">
-                                            <h5>Your Response</h5>
-                                            <textarea name="reply_message" class="form-control" 
-                                                placeholder="Type your response here..." required></textarea>
-                                            <button type="submit" name="confirm_message" class="btn btn-send">
-                                                Send Response & Confirm
-                                            </button>
-                                        </div>
-                                    </form>
-                                ` : `
-                                    <div class="confirmed-message">
-                                        <h5>Message Confirmed</h5>
-                                        ${data.reply_message ? `
-                                            <div class="response-box">
-                                                <strong>Your Response:</strong>
-                                                <p class="mt-2">${data.reply_message}</p>
-                                            </div>
-                                        ` : '<p>No response was recorded.</p>'}
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                    `;
-                    document.getElementById('messageDetail').innerHTML = detailHtml;
-                });
-        }
+    function showMessage(id) {
+    // Show loading state
+    document.getElementById('messageDetail').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading message details...</p>
+        </div>
+    `;
 
-        // Click event handler for closing message detail
-        document.addEventListener('click', function(event) {
-            const messageDetail = document.getElementById('messageDetail');
-            const messageList = document.querySelector('.message-list');
-            const clickedElement = event.target;
-            
-            if (!messageDetail.contains(clickedElement) && !messageList.contains(clickedElement)) {
-                messageDetail.innerHTML = `
-                    <div class="text-center text-muted">
-                        <h4>Select a message to view details</h4>
-                    </div>
-                `;
+    // Log the fetch URL for debugging
+    const fetchUrl = `get_message.php?id=${id}`;
+    console.log('Fetching from:', fetchUrl);
+
+    fetch(fetchUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+        })
+        .then(response => {
+            console.log('Server response:', response); // Debug log
+
+            if (!response.success) {
+                throw new Error(response.error || 'Unknown error occurred');
+            }
+
+            const data = response.data;
+            
+            const detailHtml = `
+                <h3>Message Details</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">${data.name || ''}</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">${data.email || ''}</h6>
+                        <p class="card-text"><strong>Problem:</strong> ${data.problem || ''}</p>
+                        <p class="card-text"><strong>Details:</strong> ${data.details || ''}</p>
+                        <p class="card-text"><strong>Query:</strong> ${data.query || ''}</p>
+                        <p class="card-text"><small class="text-muted">Created: ${data.created_at || ''}</small></p>
+                        
+                        ${data.status !== 'confirmed' ? `
+                            <form method="POST" action="">
+                                <input type="hidden" name="message_id" value="${data.id}">
+                                <input type="hidden" name="email" value="${data.email}">
+                                <input type="hidden" name="name" value="${data.name}">
+                                
+                                <div class="reply-box">
+                                    <h5>Your Response</h5>
+                                    <textarea name="reply_message" class="form-control" 
+                                        placeholder="Type your response here..." required></textarea>
+                                    <button type="submit" name="confirm_message" class="btn btn-send">
+                                        Send Response & Confirm
+                                    </button>
+                                </div>
+                            </form>
+                        ` : `
+                            <div class="confirmed-message">
+                                <h5>Message Confirmed</h5>
+                                ${data.reply_message ? `
+                                    <div class="response-box">
+                                        <strong>Your Response:</strong>
+                                        <p class="mt-2">${data.reply_message}</p>
+                                    </div>
+                                ` : '<p>No response was recorded.</p>'}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+            document.getElementById('messageDetail').innerHTML = detailHtml;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('messageDetail').innerHTML = `
+                <div class="alert alert-danger">
+                    <h5>Error</h5>
+                    <p>${error.message}</p>
+                    <hr>
+                    <p class="mb-0">Technical details have been logged to the console.</p>
+                </div>
+            `;
         });
+}
+
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
