@@ -247,7 +247,9 @@ $total_meal_sales = number_format($total_meal_sales_calculated, 2);
 
 
 
-
+// Query to get available discounts
+$sql = "SELECT offer_name, discount_amount, expiry_date FROM offers WHERE expiry_date >= CURDATE() ORDER BY expiry_date ASC";
+$result = $conn->query($sql);
 
 
 // Get all required data
@@ -353,8 +355,35 @@ $recent_orders = getRecentOrders($conn);
                     </div>
                 </div>
             </div>
+
+
+            <div class="col-md-4">
+    <div class="dashboard-card glass-effect">
+        <div class="card-icon-wrapper pulse">
+        <i class="fa fa-gift" aria-hidden="true"></i>
+        </div>
+        <div class="card-details">
+            <h2>Available Discounts</h2>
+            <?php if ($result->num_rows > 0): ?>
+                <ul class="discount-list">
+                    <?php while ($row = $result->fetch_assoc()): ?>
+                        <li>
+                            <strong><?php echo htmlspecialchars($row['offer_name']); ?></strong><br>
+                            Discount: <span class="highlight-text">BDT <?php echo htmlspecialchars($row['discount_amount']); ?></span><br>
+                            Expiry Date: <span><?php echo htmlspecialchars($row['expiry_date']); ?></span>
+                        </li>
+                    <?php endwhile; ?>
+                </ul>
+            <?php else: ?>
+                <p>No available discounts at the moment.</p>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
         </div>
 
+
+        
         <!-- Charts Row -->
         <div class="row g-4 mb-4">
             <div class="col-md-6">
