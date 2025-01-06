@@ -156,120 +156,176 @@ if (!$result) {
 }
 ?>
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meal Registration Management</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
-            background-color:rgb(237, 230, 230);
-            font-family: 'Arial', sans-serif;
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.875rem;
         }
-        .container-fluid {
-            max-width: 100%;
+
+        .main-container {
+            padding: 1rem;
+            margin-left: 20%;
+            margin-right: 2%;
         }
+
         .card {
-            border-radius: 10px;
-            
-            margin-bottom: 20px;
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         }
-        .table-responsive {
-            border-radius: 15px;
-            overflow: hidden;
+
+        .card-header {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            border-radius: 0.75rem 0.75rem 0 0 !important;
+            padding: 1rem;
+            font-weight: bold;
             
         }
+
+        .card-header h2 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        .table-container {
+            padding: 0.5rem;
+        }
+
         .table {
+            font-size:1rem;
             margin-bottom: 0;
         }
+
+        .table > :not(caption) > * > * {
+            padding: 0.5rem;
+        }
+
         .table thead {
-            background-color: #4a90e2;
-            color: white;
+            background-color: #f8f9fa;
         }
+
         .table thead th {
-            vertical-align: middle;
             font-weight: 600;
-            border-bottom: none;
+            color: #495057;
+            border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
         }
-        .table tbody tr {
-            transition: background-color 0.3s ease;
-        }
+
         .table tbody tr:hover {
-            background-color: white;
+            background-color: #f8f9fa;
         }
-        .status-active {
-            color: #28a745;
-            font-weight: bold;
+
+        .id-card-image {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: zoom-in;
+            transition: transform 0.2s;
+            border: 2px solid #e9ecef;
         }
-        .status-inactive {
-            color: #dc3545;
-            font-weight: bold;
+
+        .id-card-image:hover {
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .btn-activate {
-            background-color: #28a745;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        .btn-activate:hover {
-            background-color: #218838;
-        }
-        .message-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1050;
-            width: 80%;
-            max-width: 600px;
-        }
-        @media (max-width: 768px) {
-            .table-responsive {
-                font-size: 0.9rem;
-            }
-            .btn {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.875rem;
-            }
-        }
-       
-        .card{
-            margin-left:22%;
-            margin-right:5%;
-        }
-        h1{
-            margin-top:2%;
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 50rem;
+            font-size: 0.75rem;
             font-weight: 600;
+        }
+
+        .status-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn-activate {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 50rem;
+            background: linear-gradient(135deg, #28a745, #218838);
+            border: none;
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-activate:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(40, 167, 69, 0.2);
+        }
+
+        .modal-content {
+            border-radius: 1rem;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            border-radius: 1rem 1rem 0 0;
+            padding: 1rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .main-container {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+            h1 {
+            margin-top: 2%;
+            color: black;
+            font-weight: 600;
+        }
         }
     </style>
 </head>
 <body>
-   
-    <div class="container-fluid py-4">
-        <!-- Message Container -->
-        <?php if (!empty($message)): ?>
-            <div class="alert alert-<?php echo $messageType; ?> text-center message-container alert-dismissible fade show" role="alert">
-                <?php echo htmlspecialchars($message); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
+  
+    
+    <div class="main-container">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h2 class="mb-0 text-center">
+            <div class="card-header">
+                <h2 class="text-white text-center mb-0">
                     <i class="bi bi-list-check me-2"></i>Meal Registration Management
                 </h2>
             </div>
-            <div class="card-body">
-                <!-- Meal Registration Details -->
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
+            <div class="card-body p-0">
+                <div class="table-container">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -277,35 +333,64 @@ if (!$result) {
                                 <th>Department</th>
                                 <th>Deposit</th>
                                 <th>Varsity ID</th>
-                                <th>Email</th>
-                                <th>Meal Date</th>
+                                <th>Start Date</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th>ID Front</th>
+                                <th>ID Back</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php while ($row = $result->fetch_assoc()): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($row['customer_id']); ?></td>
-                                <td><?php echo htmlspecialchars($row['name']); ?></td>
+                                <td>
+                                    <div class="d-flex flex-column ">
+                                        <span><?php echo htmlspecialchars($row['name']); ?></span>
+                                        <small class="text-muted"><?php echo htmlspecialchars($row['email']); ?></small>
+                                    </div>
+                                </td>
                                 <td><?php echo htmlspecialchars($row['department']); ?></td>
-                                <td><?php echo number_format($row['deposit'], 2); ?></td>
+                                <td><?php echo number_format($row['deposit'], 2); ?> TK</td>
                                 <td><?php echo htmlspecialchars($row['varsity_id']); ?></td>
-                                <td><?php echo htmlspecialchars($row['email']); ?></td>
-                                <td><?php echo htmlspecialchars($row['meal_date']); ?></td>
-                                <td class="<?php echo $row['active'] ? 'status-active' : 'status-inactive'; ?>">
-                                    <?php echo $row['active'] ? 'Active' : 'Inactive'; ?>
+                                <td><?php echo date('d M Y', strtotime($row['meal_date'])); ?></td>
+                                <td>
+                                    <span class="status-badge <?php echo $row['active'] ? 'status-active' : 'status-inactive'; ?>">
+                                        <?php echo $row['active'] ? 'Active' : 'Inactive'; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($row['id_card_front'])): ?>
+                                        <img src="<?php echo htmlspecialchars($row['id_card_front']); ?>" 
+                                             alt="Front ID" 
+                                             class="id-card-image"
+                                             onclick="showImage(this.src, '<?php echo htmlspecialchars($row['name']); ?> - Front ID')">
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">No image</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($row['id_card_back'])): ?>
+                                        <img src="<?php echo htmlspecialchars($row['id_card_back']); ?>" 
+                                             alt="Back ID" 
+                                             class="id-card-image"
+                                             onclick="showImage(this.src, '<?php echo htmlspecialchars($row['name']); ?> - Back ID')">
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">No image</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if (!$row['active']): ?>
                                         <form method="POST" class="d-inline">
                                             <input type="hidden" name="customer_id" value="<?php echo $row['customer_id']; ?>">
-                                            <button type="submit" name="activate_deposit" class="btn btn-activate btn-sm">
-                                                <i class="bi bi-power"></i> Activate
+                                            <button type="submit" name="activate_deposit" class="btn btn-activate">
+                                                <i class="bi bi-check-circle me-1"></i>Activate
                                             </button>
                                         </form>
                                     <?php else: ?>
-                                        <span class="badge bg-success">Processed</span>
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check2-circle me-1"></i>Processed
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -317,24 +402,40 @@ if (!$result) {
         </div>
     </div>
 
-    <!-- Bootstrap JS and Dependencies -->
+    <!-- Image Preview Modal -->
+    <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="previewImage" src="" alt="ID Card Preview" class="modal-image">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-dismiss alert after 5 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            var alertElement = document.querySelector('.alert');
-            if (alertElement) {
-                setTimeout(function() {
-                    var alert = new bootstrap.Alert(alertElement);
-                    alert.close();
-                }, 5000);
-            }
-        });
-
-        // Prevent form resubmission
-        if (window.history.replaceState) {
-            window.history.replaceState(null, null, window.location.href);
+        // Image preview functionality
+        function showImage(src, title) {
+            const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
+            document.querySelector('#imagePreviewModal .modal-title').textContent = title;
+            document.getElementById('previewImage').src = src;
+            modal.show();
         }
+
+        // Auto-dismiss alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                }, 5000);
+            });
+        });
     </script>
 </body>
 </html>

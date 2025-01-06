@@ -77,22 +77,32 @@ function getMonthlySalesGraph($conn) {
 
 // Function to get top 5 customers
 function getTopCustomers($conn) {
+    // SQL query to fetch top 5 customers excluding customer_id = 0
     $query = "SELECT 
                 customer_id, 
-                COUNT(*) as order_count, 
-                COALESCE(SUM(total_cost), 0) as total_spent 
+                COUNT(*) AS order_count, 
+                COALESCE(SUM(total_cost), 0) AS total_spent 
               FROM orders 
+              WHERE customer_id != 0  -- Exclude customer_id 0
               GROUP BY customer_id
               ORDER BY total_spent DESC
               LIMIT 5";
-    $result = mysqli_query($conn, $query) or handleDatabaseError($conn, $query);
     
-    $top_customers = [];
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $top_customers[] = $row;
-        }
+    // Execute the query and handle any errors
+    $result = mysqli_query($conn, $query);
+    if (!$result) {
+        handleDatabaseError($conn, $query);
     }
+    
+    // Initialize an empty array to store top customers
+    $top_customers = [];
+    
+    // Fetch the result and populate the top_customers array
+    while ($row = mysqli_fetch_assoc($result)) {
+        $top_customers[] = $row;
+    }
+    
+    // Return the top customers array
     return $top_customers;
 }
 
@@ -147,8 +157,9 @@ function getTopProducts($conn) {
 // Function to get recent orders
 function getRecentOrders($conn, $limit = 10) {
     $query = "SELECT 
-                id, 
+                id,
                 customer_id, 
+                gest_customer_id ,
                 total_cost, 
                 net_total, 
                 order_status, 
@@ -183,7 +194,64 @@ function getRecentOrders($conn, $limit = 10) {
     return $recent_orders;
 }
 
+
+// Function to get total active products
+function getTotalActiveProducts($conn) {
+    $query = "SELECT COUNT(*) as total_active_products FROM products WHERE Active = 1";
+    $result = mysqli_query($conn, $query);
+    return $result ? mysqli_fetch_assoc($result)['total_active_products'] : 0;
+}
+
+
+// Function to get today's meal sales
+function getTodayMealSales($conn) {
+    $query = "SELECT 
+                COALESCE(SUM(lunch_quantity * meal_price), 0) AS total_lunch_sales,
+                COALESCE(SUM(dinner_quantity * meal_price), 0) AS total_dinner_sales,
+                COALESCE(SUM(lunch_quantity + dinner_quantity) * meal_price, 0) AS total_meal_sales,
+                COALESCE(SUM(lunch_quantity), 0) AS total_lunch_quantity,
+                COALESCE(SUM(dinner_quantity), 0) AS total_dinner_quantity
+              FROM meal
+              WHERE DATE(created_at) = CURDATE() AND active = 1";
+    
+    $result = mysqli_query($conn, $query);
+    
+    if ($result) {
+        return mysqli_fetch_assoc($result);
+    }
+    
+    return [
+        'total_lunch_sales' => 0,
+        'total_dinner_sales' => 0,
+        'total_meal_sales' => 0,
+        'total_lunch_quantity' => 0,
+        'total_dinner_quantity' => 0
+    ];
+}
+
+// Fetch today's meal sales
+$today_meal_sales = getTodayMealSales($conn);
+
+// Safely assign values to avoid undefined variable errors
+$total_meal_sales = isset($today_meal_sales['total_meal_sales']) ? number_format($today_meal_sales['total_meal_sales'], 2) : '0.00';
+$total_lunch_quantity = isset($today_meal_sales['total_lunch_quantity']) ? $today_meal_sales['total_lunch_quantity'] : 0;
+$total_lunch_sales = isset($today_meal_sales['total_lunch_sales']) ? number_format($today_meal_sales['total_lunch_sales'], 2) : '0.00';
+$total_dinner_quantity = isset($today_meal_sales['total_dinner_quantity']) ? $today_meal_sales['total_dinner_quantity'] : 0;
+$total_dinner_sales = isset($today_meal_sales['total_dinner_sales']) ? number_format($today_meal_sales['total_dinner_sales'], 2) : '0.00';
+
+// Calculate total meal sales by adding lunch and dinner sales
+$total_meal_sales_calculated = $total_lunch_sales + $total_dinner_sales;
+$total_meal_sales = number_format($total_meal_sales_calculated, 2);
+
+
+
+
+
+
+
+
 // Get all required data
+$total_active_products = getTotalActiveProducts($conn);
 $today_sales = getTodaySales($conn);
 $monthly_sales = getMonthlySales($conn);
 $pending_orders = getPendingOrders($conn);
@@ -194,6 +262,11 @@ $top_customers = getTopCustomers($conn);
 $recent_orders = getRecentOrders($conn);
 
 ?>
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,18 +281,39 @@ $recent_orders = getRecentOrders($conn);
     <div class="container-fluid">
         <!-- Dashboard Cards Row -->
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
+        <div class="col-md-4">
                 <div class="dashboard-card glass-effect">
                     <div class="card-icon-wrapper">
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <div class="card-details">
                         <h2>Today's Sales</h2>
-                        <h3 class="highlight-text">BD<?php echo number_format($today_sales['today_total_sales'], 2); ?></h3>
+                        <h3 class="highlight-text">BD <?php echo number_format($today_sales['today_total_sales'], 2); ?></h3>
                         <p class="stat-detail"><?php echo $today_sales['today_order_count']; ?> Orders Today</p>
                     </div>
                 </div>
             </div>
+            <div class="col-md-4">
+    <div class="dashboard-card glass-effect">
+        <div class="card-icon-wrapper">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="card-details">
+            <h2>Today's Meal Sales</h2>
+            <h3 class="highlight-text">BD <?php echo $total_meal_sales; ?></h3>
+            <p class="stat-detail">
+                <?php echo $total_lunch_quantity; ?> Lunch Meals Sold - 
+                BD <?php echo $total_lunch_sales; ?>
+            </p>
+            <p class="stat-detail">
+                <?php echo $total_dinner_quantity; ?> Dinner Meals Sold - 
+                BD <?php echo $total_dinner_sales; ?>
+            </p>
+        </div>
+    </div>
+</div>
+
+
             <div class="col-md-4">
                 <div class="dashboard-card glass-effect">
                     <div class="card-icon-wrapper">
@@ -227,7 +321,7 @@ $recent_orders = getRecentOrders($conn);
                     </div>
                     <div class="card-details">
                         <h2>Monthly Sales</h2>
-                        <h3 class="highlight-text">BD<?php echo number_format($monthly_sales['monthly_total_sales'], 2); ?></h3>
+                        <h3 class="highlight-text">BD <?php echo number_format($monthly_sales['monthly_total_sales'], 2); ?></h3>
                         <p class="stat-detail"><?php echo $monthly_sales['monthly_order_count']; ?> Orders This Month</p>
                     </div>
                 </div>
@@ -240,6 +334,21 @@ $recent_orders = getRecentOrders($conn);
                     <div class="card-details">
                         <h2>Pending Orders</h2>
                         <h3 class="highlight-text"><?php echo $pending_orders; ?></h3>
+                        <p class="stat-detail">Needs Attention</p>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <div class="col-md-4">
+                <div class="dashboard-card glass-effect">
+                    <div class="card-icon-wrapper pulse">
+                    <i class="fab fa-product-hunt" style="color:rgb(52, 138, 2);"></i>
+                    </div>
+                    <div class="card-details">
+                        <h2>Total Active Product's</h2>
+                        <h3 class="highlight-text"><?php echo $total_active_products; ?></h3>
                         <p class="stat-detail">Needs Attention</p>
                     </div>
                 </div>
@@ -285,7 +394,7 @@ $recent_orders = getRecentOrders($conn);
                                 <tr>
                                     <td style="color:parpel"><span class="customer-id"><?php echo $customer['customer_id']; ?></span></td>
                                     <td><?php echo $customer['order_count']; ?></td>
-                                    <td>BD<?php echo number_format($customer['total_spent'], 2); ?></td>
+                                    <td>BD <?php echo number_format($customer['total_spent'], 2); ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -293,6 +402,9 @@ $recent_orders = getRecentOrders($conn);
                     </div>
                 </div>
             </div>
+
+          
+
             <!-- <div class="col-md-6">
                 <div class="dashboard-card glass-effect">
                     <h2><i class="fas fa-crown"></i> Top 5 Selling Products</h2>
@@ -326,6 +438,7 @@ $recent_orders = getRecentOrders($conn);
                     <thead >
                         <tr >
                             <th style="color: white;">Order ID</th>
+                            <th style="color: white;">Guest Customer</th>
                             <th style="color: white;">Customer</th>
                             <th style="color: white;">Total</th>
                             <th style="color: white;">Net Total</th>
@@ -338,9 +451,10 @@ $recent_orders = getRecentOrders($conn);
                         <?php foreach($recent_orders as $order): ?>
                         <tr>
                             <td>#<?php echo $order['id']; ?></td>
+                            <td><?php echo $order['gest_customer_id']; ?></td>
                             <td><?php echo $order['customer_id']; ?></td>
-                            <td>BD<?php echo number_format($order['total_cost'], 2); ?></td>
-                            <td>BD<?php echo number_format($order['net_total'], 2); ?></td>
+                            <td>BD <?php echo number_format($order['total_cost'], 2); ?></td>
+                            <td>BD <?php echo number_format($order['net_total'], 2); ?></td>
                             <td><span class="badge bg-<?php echo $order['order_status'] == 'pending' ? 'warning' : 'success'; ?>"><?php echo $order['order_status']; ?></span></td>
                             <td><?php echo date('M d, Y', strtotime($order['created_at'])); ?></td>
                             <td><?php echo $order['payment_method']; ?></td>

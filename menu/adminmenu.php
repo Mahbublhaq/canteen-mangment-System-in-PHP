@@ -376,6 +376,13 @@ mysqli_stmt_close($stmt);
                 </a>
             </li>
             <li>
+                <a href="admin_order.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'admin_order.php') ? 'active' : ''; ?>">
+                <i class="fas fa-shopping-cart"></i> Make Order's
+                   
+                </a>
+            </li>
+            
+            <li>
                 <a href="orders.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'orders.php') ? 'active' : ''; ?>">
                     <i class="fas fa-clipboard-list"></i>
                     Orders

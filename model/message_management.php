@@ -110,7 +110,7 @@ $result = mysqli_query($conn, $query);
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .message-item.pending {
+        .message-item.Pending {
             border-left: 4px solid #ffc107;
         }
         .message-item.confirmed {
@@ -186,7 +186,7 @@ $result = mysqli_query($conn, $query);
             font-weight: 500;
             float: right;
         }
-        .custom-badge.pending {
+        .custom-badge.Pending {
             background-color: #ffc107 !important;
             color: #000 !important;
         }

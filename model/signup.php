@@ -174,6 +174,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 $login_button = '<a href="'.$google_client->createAuthUrl().'"><img src="../static/sign-in-with-google.png" style="width: 250px; height: auto;" /></a>';
 ?>
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -263,7 +265,7 @@ $login_button = '<a href="'.$google_client->createAuthUrl().'"><img src="../stat
 
             <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Ex-PassworD123" required>
             </div>
 
             <div class="input-group">
@@ -322,6 +324,8 @@ $login_button = '<a href="'.$google_client->createAuthUrl().'"><img src="../stat
 
             // Password validation
             const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])[A-Za-z\d]{8,}$/;
+            //example 
+
             if (!passwordRegex.test(passwordInput.value)) {
                 event.preventDefault();
                 alert('Password must be at least 8 characters long, include one uppercase letter, and only contain letters.');
