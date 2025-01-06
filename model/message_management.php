@@ -163,6 +163,7 @@ $result = mysqli_query($conn, $query);
             padding: 15px;
             border-radius: 8px;
             margin-top: 15px;
+            margin-left: 20%;
         }
         h1 {
             margin-top: 2%;
@@ -204,11 +205,12 @@ $result = mysqli_query($conn, $query);
 </head>
 <body>
     <div class="container-fluid">
+        
         <?php if (isset($success_message)): ?>
-            <div class="alert alert-success"><?php echo $success_message; ?></div>
+            <div class="alert alert-success"style="margin-left:20%"><?php echo $success_message; ?></div>
         <?php endif; ?>
         <?php if (isset($error_message)): ?>
-            <div class="alert alert-danger"><?php echo $error_message; ?></div>
+            <div class="alert alert-danger"style="margin-left:20%"><?php echo $error_message; ?></div>
         <?php endif; ?>
         
         <div class="message-container">

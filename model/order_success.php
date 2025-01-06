@@ -10,13 +10,16 @@ class OrdersView {
         $this->conn = $database_connection;
     }
 
-    // Improved method to get orders with robust filtering
+    // Improved method to get orders with robust filtering// Improved method to get orders with robust filtering
     public function getAllOrders($filter = 'all', $start_date = null, $end_date = null) {
         $query = "SELECT 
                     o.id, 
                     o.customer_id, 
-                    c.customer_name, 
-                    c.phone,
+                    c.customer_name AS regular_customer_name, 
+                    c.phone AS regular_customer_phone,
+                    o.gest_customer_id, 
+                    gc.customer_name AS guest_customer_name, 
+                    gc.phone_number AS guest_customer_phone,
                     o.order_details, 
                     o.total_cost, 
                     o.subtotal, 
@@ -30,8 +33,9 @@ class OrdersView {
                     o.admin_id
                   FROM orders o
                   LEFT JOIN customers c ON o.customer_id = c.id
+                  LEFT JOIN guest_customer gc ON o.gest_customer_id = gc.id
                   WHERE 1=1";
-
+    
         // Filtering logic
         switch ($filter) {
             case '30_days':
@@ -46,28 +50,28 @@ class OrdersView {
                 }
                 break;
         }
-
+    
         $query .= " ORDER BY o.created_at DESC";
-
+    
         $result = $this->conn->query($query);
-        
+    
         $orders = [];
         $total_earn = 0;
-
+    
         if ($result && $result->num_rows > 0) {
             while ($row = $result->fetch_assoc()) {
                 $orders[] = $row;
                 $total_earn += $row['net_total'];
             }
         }
-
+    
         return [
             'orders' => $orders,
             'total_earn' => $total_earn
         ];
     }
+    
 }
-
 // Handle the page
 class OrdersViewController {
     private $ordersView;
@@ -219,45 +223,56 @@ class OrdersViewController {
         </div>
         
         <table>
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Customer Name</th>
-                    <th>Customer Phone</th>
-                    <th>Total Cost</th>
-                    <th>Discount</th>
-                    <th>Net Total</th>
-                    <th>Order Date</th>
-                    <th>Payment Method</th>
-                    <th>Order Status</th>
-                    <th>Ap_Admin ID</th>
-                    <th>Ap_By</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($orders)): ?>
-                    <tr>
-                        <td colspan="9" style="text-align: center;">No orders found</td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($orders as $order): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($order['id']) ?></td>
-                        <td><?= htmlspecialchars($order['customer_name'] ?? 'N/A') ?></td>
-                        <td><?= htmlspecialchars($order['phone'] ?? 'N/A') ?></td>
-                        <td>BDT <?= number_format($order['total_cost'], 2) ?></td>
-                        <td>BDT <?= number_format($order['discount_amount'], 2) ?></td>
-                        <td>BDT <?= number_format($order['net_total'], 2) ?></td>
-                        <td><?= htmlspecialchars($order['created_at']) ?></td>
-                        <td><?= htmlspecialchars($order['payment_method']) ?></td>
-                        <td><?= htmlspecialchars($order['order_status']) ?></td>
-                        <td><?= htmlspecialchars($order['admin_id']) ?></td>
-                        <td><?= htmlspecialchars($order['admin_name']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Customer Name</th>
+            <th>Customer Phone</th>
+            <th>Total Cost</th>
+            <th>Discount</th>
+            <th>Net Total</th>
+            <th>Order Date</th>
+            <th>Payment Method</th>
+            <th>Order Status</th>
+            <th>Ap_Admin ID</th>
+            <th>Ap_By</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php if (empty($orders)): ?>
+            <tr>
+                <td colspan="11" style="text-align: center;">No orders found</td>
+            </tr>
+        <?php else: ?>
+            <?php foreach ($orders as $order): ?>
+            <tr>
+                <td><?= htmlspecialchars($order['id']) ?></td>
+                <td>
+                    <?php if (!empty($order['guest_customer_name'])): ?>
+                        <span style="color: red;">G</span> 
+                        <?= htmlspecialchars($order['guest_customer_name']) ?>
+                    <?php else: ?>
+                        <?= htmlspecialchars($order['regular_customer_name'] ?? 'N/A') ?>
+                    <?php endif; ?>
+                </td>
+                <td>
+                    <?= htmlspecialchars($order['guest_customer_phone'] ?? $order['regular_customer_phone'] ?? 'N/A') ?>
+                </td>
+                <td>BDT <?= number_format($order['total_cost'], 2) ?></td>
+                <td>BDT <?= number_format($order['discount_amount'], 2) ?></td>
+                <td>BDT <?= number_format($order['net_total'], 2) ?></td>
+                <td><?= htmlspecialchars($order['created_at']) ?></td>
+                <td><?= htmlspecialchars($order['payment_method']) ?></td>
+                <td><?= htmlspecialchars($order['order_status']) ?></td>
+                <td><?= htmlspecialchars($order['admin_id']) ?></td>
+                <td><?= htmlspecialchars($order['admin_name']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </tbody>
+</table>
+
+
     </div>
 </body>
 </html>
