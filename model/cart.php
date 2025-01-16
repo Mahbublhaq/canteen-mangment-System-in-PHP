@@ -126,11 +126,63 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['apply'])) {
 }
 
 // Handle order placement
+// Handle order placement
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['place_order'])) {
     if (!isset($_SESSION['user_id'])) {
         echo "<div class='alert alert-danger'>Please login first.</div>";
         exit();
     }
+
+    $customer_id = $_SESSION['user_id'];
+    $payment_method = $_POST['payment_method'] ?? 'Cash on Delivery';
+
+    // Prepare order details
+    $orderDetails = [];
+    foreach ($_SESSION['cart'] as $item) {
+        $orderDetails[] = "{$item['product_name']}*{$item['quantity']} BDT {$item['price']}";
+    }
+    $orderDetailsJson = json_encode($orderDetails);
+
+    // Set final totals
+    $finalSubtotal = $subtotalPrice;
+    $finalDiscountAmount = isset($_SESSION['discount_amount']) ? $_SESSION['discount_amount'] : 0;
+    $finalNetTotal = isset($_SESSION['net_total']) ? $_SESSION['net_total'] : $subtotalPrice;
+    $finalDiscountCode = isset($_SESSION['applied_discount_code']) ? $_SESSION['applied_discount_code'] : null;
+
+    // If payment method is Online, store details in session and redirect
+    if ($payment_method === 'Online') {
+        // Get customer details
+        $customerStmt = $conn->prepare("SELECT customer_name, email, phone FROM customers WHERE id = ?");
+        $customerStmt->bind_param("i", $customer_id);
+        $customerStmt->execute();
+        $customerStmt->bind_result($customerName, $customerEmail, $customerPhone);
+        $customerStmt->fetch();
+        $customerStmt->close();
+
+        // Store all necessary information in session
+        $_SESSION['pending_order'] = [
+            'customer_id' => $customer_id,
+            'customer_name' => $customerName,
+            'customer_email' => $customerEmail,
+            'customer_phone' => $customerPhone,
+            'order_details' => $orderDetailsJson,
+            'total_cost' => $total_deduction,
+            'subtotal' => $finalSubtotal,
+            'discount_amount' => $finalDiscountAmount,
+            'net_total' => $finalNetTotal,
+            'discount_code' => $finalDiscountCode,
+            'payment_method' => $payment_method,
+            'lunch_quantity' => $lunch_quantity,
+            'dinner_quantity' => $dinner_quantity,
+            'lunch_total' => $lunchTotalPrice,
+            'dinner_total' => $dinnerTotalPrice,
+            'special_items_total' => $specialItemsTotal
+        ];
+
+        // Redirect to online payment page
+        header("Location: onlinepayment.php");
+        exit();
+    } 
 
     $customer_id = $_SESSION['user_id'];
     $payment_method = $_POST['payment_method'] ?? 'Cash on Delivery';

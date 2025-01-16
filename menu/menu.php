@@ -22,7 +22,7 @@ $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 0;
 // Check if user_id is set in the session (user is logged in)
 $profile_link = isset($_SESSION['user_id']) ? "/model/profile.php" : "/model/login.php";
 
-$conn->close();
+// $conn->close();
 
 ?>
 <!DOCTYPE html>
