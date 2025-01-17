@@ -2,12 +2,6 @@
 // Start session and include required files
 session_start();
 require_once '../db/db.php';
-require '../vendor/autoload.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-
 
 // Initialize variables
 $error_message = '';
@@ -117,17 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $paymentId = $paymentStmt->insert_id;
             $paymentStmt->close();
 
-            // Fetch payment details for email
-            $paymentDetailsSql = "SELECT payment_method, transaction_id, total_amount, 
-                                 payment_number, card_number 
-                                 FROM onlinepayment WHERE id = ?";
-            $paymentDetailsStmt = $conn->prepare($paymentDetailsSql);
-            $paymentDetailsStmt->bind_param("i", $paymentId);
-            $paymentDetailsStmt->execute();
-            $paymentDetails = $paymentDetailsStmt->get_result()->fetch_assoc();
-            $paymentDetailsStmt->close();
-
-            // [Continue with order insertion]
+            // Second Query: Insert into orders - FIXED QUERY
             $orderSql = "INSERT INTO orders (customer_id, order_details, total_cost, 
                         subtotal, discount_amount, net_total, payment_method, 
                         order_status, admin_name, admin_id) 
@@ -138,6 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 throw new Exception("Failed to prepare order statement: " . $conn->error);
             }
 
+            // Fixed bind_param for orders table
             $orderStmt->bind_param("isdddd", 
                 $customer_id,
                 $orderDetailsJson,
@@ -153,68 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $orderId = $orderStmt->insert_id;
             $orderStmt->close();
 
-            // Send confirmation email with payment details
-            if ($customerData['email']) {
-                try {
-                    $mail = new PHPMailer(true);
-                    $mail->isSMTP();
-                    $mail->Host = 'smtp.gmail.com';
-                    $mail->SMTPAuth = true;
-                    $mail->Username = 'gourob.haq@gmail.com';
-                    $mail->Password = 'owtc hcch zufy cgey';
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-                    $mail->Port = 465;
-                    $mail->setFrom('gourob.haq@gmail.com', 'City University Canteen');
-                    $mail->addAddress($customerData['email'], $customerData['customer_name']);
-
-                    // Generate order details HTML
-                    $orderDetailsHtml = "<ul>";
-                    foreach (json_decode($orderDetailsJson, true) as $item) {
-                        $orderDetailsHtml .= "<li>{$item['product_name']} x {$item['quantity']} - BDT {$item['price']}</li>";
-                    }
-                    $orderDetailsHtml .= "</ul>";
-
-                    // Format payment method and details
-                    $paymentInfoHtml = "<p><strong>Payment Method:</strong> " . ucfirst($paymentDetails['payment_method']) . "</p>";
-                    if ($paymentDetails['payment_method'] != 'card') {
-                        $paymentInfoHtml .= "<p><strong>Payment Number:</strong> " . $paymentDetails['payment_number'] . "</p>";
-                    } else {
-                        $paymentInfoHtml .= "<p><strong>Card Number:</strong> ****" . substr($paymentDetails['card_number'], -4) . "</p>";
-                    }
-                    $paymentInfoHtml .= "<p><strong>Transaction ID:</strong> " . $paymentDetails['transaction_id'] . "</p>";
-
-                    $mail->isHTML(true);
-                    $mail->Subject = 'Order Confirmation - City University Canteen';
-                    $mail->Body = "
-                        <div style='background-color:rgb(235, 239, 235); color: black;font-size:16px; padding: 20px; border-radius: 10px;'>
-                            <h2>Order Confirmation</h2>
-                            <p>Hello {$customerData['customer_name']},</p>
-                            <p>Thank you for your order from City University Canteen.</p>
-                            
-                            <h3>Order Details:</h3>
-                            $orderDetailsHtml
-                            
-                            <h3>Payment Information:</h3>
-                            $paymentInfoHtml
-                            
-                            <p><strong>Order ID:</strong> $orderId</p>
-                            <p><strong>Subtotal:</strong> BDT " . number_format($pending_order['subtotal'], 2) . "</p>
-                            <p><strong>Discount:</strong> BDT " . number_format($pending_order['discount_amount'], 2) . "</p>
-                            <p><strong>Total Amount Paid:</strong> BDT " . number_format($paymentDetails['total_amount'], 2) . "</p>
-                            
-                            <h3 style='background-color:green;color:white;padding:10px;'>Order Status: Confirmed</h3>
-                           
-                            <p>For any queries, please contact:</p>
-                            <p>Email: citycanteen@city_university.ac.bd</p>
-                            <p>Phone: 01700000000</p>
-                        </div>";
-                    
-                    $mail->send();
-                } catch (Exception $e) {
-                    error_log("Email sending failed: " . $mail->ErrorInfo);
-                }
-            }
-
+            // Commit transaction
+            $conn->commit();
+            
             // Clear session data
             unset($_SESSION['pending_order']);
             
@@ -397,7 +323,7 @@ include '../menu/menu.php';
             </div>
             <div class="modal-body">
                 <div class="text-center mb-4">
-                    <img id="paymentMethodLogo" src="" alt="" class="img-fluid mb-3" style="max-height: 60px;">
+                    <img id="paymentMethodLogo" src="" alt="Payment Method Logo" class="img-fluid mb-3" style="max-height: 60px;">
                     <h4 id="paymentMethodTitle"></h4>
                 </div>
                 <form action="onlinepayment.php" method="POST">
@@ -453,7 +379,20 @@ include '../menu/menu.php';
     </div>
 </div>
 
-
+<script>
+function setPaymentMethod(method) {
+    document.getElementById('payment_method').value = method;
+    document.getElementById('paymentMethodTitle').textContent = method.charAt(0).toUpperCase() + method.slice(1);
+    
+    // Set logo based on payment method
+    const logoSrc = {
+        'bkash': 'path/to/bkash-logo.png',
+        'nagad': 'path/to/nagad-logo.png',
+        'rocket': 'path/to/rocket-logo.png'
+    };
+    document.getElementById('paymentMethodLogo').src = logoSrc[method];
+}
+</script>
 
 <style>
 .payment-method-card {
@@ -476,23 +415,6 @@ include '../menu/menu.php';
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      function setPaymentMethod(method) {
-    document.getElementById('payment_method').value = method;
-    document.getElementById('paymentMethodTitle').textContent = method.charAt(0).toUpperCase() + method.slice(1);
-    
-    // Set logo based on payment method
-    const logoSrc = {
-    'bkash': '/static/bkash.png',  // Absolute path
-    'nagad': '/static/nagad.png',  // Absolute path
-    'rocket': '/static/rocket-logo.png'  // Absolute path
-};
-    document.getElementById('paymentMethodLogo').src = logoSrc[method];
-}
-
-
-
-
-
         document.addEventListener('DOMContentLoaded', function() {
             const expectedAmount = <?php echo json_encode($pending_order['net_total'] ?? 0); ?>;
             const amountInputs = document.querySelectorAll('input[name="amount"]');

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 06, 2025 at 10:38 AM
+-- Generation Time: Jan 16, 2025 at 06:44 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -201,7 +201,7 @@ CREATE TABLE `meal_registration` (
 --
 
 INSERT INTO `meal_registration` (`id`, `customer_id`, `name`, `department`, `deposit`, `varsity_id`, `email`, `active`, `meal_date`, `id_card_front`, `id_card_back`) VALUES
-(1, 1, 'Shaikh Mahbubul Huq', 'Computer Science', 2000.00, '1925102005', 'mahbubulhaq.cu.05@gmail.com', 1, '2025-01-07', '../uploads/id_cards/677b97c127503.jpg', '../uploads/id_cards/677b97c131eeb.jpg');
+(1, 1, 'Shaikh Mahbubul Huq', 'Computer Science', 550.00, '1925102005', 'mahbubulhaq.cu.05@gmail.com', 1, '2025-01-07', '../uploads/id_cards/677b97c127503.jpg', '../uploads/id_cards/677b97c131eeb.jpg');
 
 -- --------------------------------------------------------
 
@@ -225,7 +225,38 @@ CREATE TABLE `offers` (
 
 INSERT INTO `offers` (`id`, `offer_name`, `discount_code`, `discount_amount`, `expiry_date`, `created_at`, `updated_at`) VALUES
 (4, 'Hot Offer', 'mahabub', 50, '2024-12-30', '2024-12-29 08:24:50', '2024-12-29 08:24:50'),
-(5, 'Hot Offer', 'Mahabub', 50, '2025-01-08', '2025-01-06 09:13:49', '2025-01-06 09:13:49');
+(5, 'Hot Offer', 'Mahabub', 50, '2025-01-08', '2025-01-06 09:13:49', '2025-01-06 09:13:49'),
+(6, 'Hot Offer', 'mahabub', 50, '2025-01-12', '2025-01-10 18:16:21', '2025-01-10 18:16:21');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `onlinepayment`
+--
+
+CREATE TABLE `onlinepayment` (
+  `id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `order_details` text NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `payment_method` enum('bkash','nagad','rocket','card') NOT NULL,
+  `payment_number` varchar(20) DEFAULT NULL,
+  `card_number` varchar(20) DEFAULT NULL,
+  `card_expiry` varchar(10) DEFAULT NULL,
+  `transaction_id` varchar(50) NOT NULL,
+  `payment_status` enum('pending','completed','failed') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `onlinepayment`
+--
+
+INSERT INTO `onlinepayment` (`id`, `customer_id`, `customer_name`, `email`, `phone`, `order_details`, `total_amount`, `payment_method`, `payment_number`, `card_number`, `card_expiry`, `transaction_id`, `payment_status`, `created_at`) VALUES
+(5, 1, 'Shaikh Mahbubul Huq', 'mahbubulhaq.cu.05@gmail.com', '01601337085', '{\"13\":{\"product_name\":\"Ilish Mas\",\"price\":\"150.00\",\"product_image\":\"..\\/uploads\\/fishfry.jpeg\",\"product_details\":\"illish fish fry + Rice +Dal\",\"quantity\":1}}', 150.00, 'bkash', '1601337085', '', '', '1925102005', 'pending', '2025-01-11 13:31:47');
 
 -- --------------------------------------------------------
 
@@ -255,7 +286,18 @@ CREATE TABLE `orders` (
 --
 
 INSERT INTO `orders` (`id`, `gest_customer_id`, `customer_id`, `order_details`, `total_cost`, `subtotal`, `discount_amount`, `net_total`, `created_at`, `payment_method`, `discount_code`, `order_status`, `admin_name`, `admin_id`) VALUES
-(4, 3, 0, '[{\"product_id\":11,\"product_name\":\"Kacchi Biryani\",\"quantity\":1,\"price\":\"200.00\",\"subtotal\":200}]', 200.00, 200.00, 0.00, 200.00, '2025-01-06 08:06:18', 'ShoptoSell', NULL, 'Confirmed', 'Mahabub', 1);
+(4, 3, 0, '[{\"product_id\":11,\"product_name\":\"Kacchi Biryani\",\"quantity\":1,\"price\":\"200.00\",\"subtotal\":200}]', 200.00, 200.00, 0.00, 200.00, '2025-01-06 08:06:18', 'ShoptoSell', NULL, 'Confirmed', 'Mahabub', 1),
+(5, 0, 1, '[\"Combo 1*1 BDT 250.00\"]', 200.00, 250.00, 50.00, 200.00, '2025-01-10 20:46:53', 'Cash on Delivery', 'mahabub', 'Pending', '', 0),
+(6, NULL, 1, '{\"13\":{\"product_name\":\"Ilish Mas\",\"price\":\"150.00\",\"product_image\":\"..\\/uploads\\/fishfry.jpeg\",\"product_details\":\"illish fish fry + Rice +Dal\",\"quantity\":1}}', 150.00, 150.00, 0.00, 150.00, '2025-01-11 13:31:47', '', NULL, 'Pending', '', 0),
+(7, 0, 1, '[\"Ilish Mas*1 BDT 150.00\"]', 150.00, 150.00, 0.00, 150.00, '2025-01-11 13:34:52', 'Cash on Delivery', NULL, 'Pending', '', 0),
+(8, 0, 1, '[\"Ilish Mas*2 BDT 150.00\"]', 250.00, 300.00, 50.00, 250.00, '2025-01-11 14:04:55', 'Online', 'mahabub', 'Pending', '', 0),
+(9, 0, 1, '[\"Ilish Mas*1 BDT 150.00\"]', 150.00, 150.00, 0.00, 150.00, '2025-01-11 14:05:20', 'Online', NULL, 'Pending', '', 0),
+(10, 0, 1, '[\"Kacchi Biryani*1 BDT 200.00\"]', 150.00, 200.00, 50.00, 150.00, '2025-01-11 14:19:11', 'Online', 'mahabub', 'Pending', '', 0),
+(11, 0, 1, '[\"Ilish Mas*1 BDT 150.00\"]', 150.00, 150.00, 0.00, 150.00, '2025-01-11 16:40:40', 'Online', NULL, 'Pending', '', 0),
+(12, 0, 1, '[]', 0.00, 0.00, 0.00, 0.00, '2025-01-11 16:40:44', 'Online', NULL, 'Pending', '', 0),
+(13, 0, 1, '[\"Ilish Mas*1 BDT 150.00\"]', 150.00, 150.00, 0.00, 150.00, '2025-01-11 16:44:09', 'Online', NULL, 'Pending', '', 0),
+(14, 0, 1, '[\"Ilish Mas*1 BDT 150.00\"]', 150.00, 150.00, 0.00, 150.00, '2025-01-11 17:01:29', 'Cash on Delivery', NULL, 'Pending', '', 0),
+(15, 0, 1, '[\"Chicken Biryani*1 BDT 100.00\"]', 100.00, 100.00, 0.00, 100.00, '2025-01-11 17:02:19', 'Online', NULL, 'Pending', '', 0);
 
 -- --------------------------------------------------------
 
@@ -351,6 +393,13 @@ ALTER TABLE `offers`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `onlinepayment`
+--
+ALTER TABLE `onlinepayment`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `customer_id` (`customer_id`);
+
+--
 -- Indexes for table `orders`
 --
 ALTER TABLE `orders`
@@ -412,13 +461,19 @@ ALTER TABLE `meal_registration`
 -- AUTO_INCREMENT for table `offers`
 --
 ALTER TABLE `offers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `onlinepayment`
+--
+ALTER TABLE `onlinepayment`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `products`
@@ -448,6 +503,12 @@ ALTER TABLE `meal`
 ALTER TABLE `meal_registration`
   ADD CONSTRAINT `fk_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
   ADD CONSTRAINT `meal_registration_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `onlinepayment`
+--
+ALTER TABLE `onlinepayment`
+  ADD CONSTRAINT `onlinepayment_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
