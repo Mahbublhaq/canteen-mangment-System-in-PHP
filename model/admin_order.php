@@ -373,7 +373,7 @@ foreach ($categories as $category) {
         </div>
     <?php endif; ?>
 
-    <h3 class="mb-4">POS System</h3>
+    <h3 class="mb-4">Manual Order's</h3>
     
     <!-- Category Tabs -->
     <div class="category-tabs d-flex flex-wrap">
